@@ -17,7 +17,7 @@ Additionally for authentication, one of you will need to obtain a CLIENT_ID, ins
 
 First, you probably have a team repository somewhere (the link looks like: https://github.com/weblab-class/teammate1-teammate2-teammate3). You each should clone this (empty) repository by navigating to where you want your folder to be (**NOT in catbook**) and typing: git clone https://github.com/weblab-class/teammate1-teammate2-teammate3.git <-- with the correct link.
 
-Then, one of your team members will need to do the following:
+Then, one of your team members will need to do the following (I already did this. you can skip this part):
 
 First on GitHub, download the skeleton (this repository) as a zip file, by clicking Code -> Download as ZIP. (Do not clone it, since this will download extra files, like .git, which will lead to GitHub being confused).
 
