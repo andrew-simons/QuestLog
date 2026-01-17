@@ -3,9 +3,9 @@ const mongoose = require("mongoose");
 const ItemSchema = new mongoose.Schema({
   id: String, 
   name: String, 
-  drawing: Image,
+  drawing: String,
   purchased: Boolean,
-  cost: Int32Array,
+  cost: Number,
 });
 
 // compile model from schema

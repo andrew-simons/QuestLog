@@ -1,47 +1,64 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useRef } from "react";
 import { GoogleLogin, googleLogout } from "@react-oauth/google";
+
+import * as THREE from "three"; //3D modeling library (didnt look good :( )
 
 import "../../utilities.css";
 import "./Skeleton.css";
 import { UserContext } from "../App";
 
-const Home = () => {
-  const { userId, handleLogin, handleLogout } = useContext(UserContext);
-  return (
-    <>
-      {userId ? (
-        <button
-          onClick={() => {
-            googleLogout();
-            handleLogout();
-          }}
-        >
-          Logout
-        </button>
-      ) : (
-        <GoogleLogin onSuccess={handleLogin} onError={(err) => console.log(err)} />
-      )}
-      <h1>HOME PAGE!</h1>
-      <h1>Good luck on your project :)</h1>
-      <h2> What you need to change in this skeleton</h2>
-      <ul>
-        <li>
-          Change the Frontend CLIENT_ID (index.jsx) to your team's CLIENT_ID (obtain this at
-          http://weblab.is/clientid)
-        </li>
-        <li>Change the Server CLIENT_ID to the same CLIENT_ID (auth.js)</li>
-        <li>
-          Change the Database SRV (mongoConnectionURL) for Atlas (server.js). You got this in the
-          MongoDB setup.
-        </li>
-        <li>Change the Database Name for MongoDB to whatever you put in the SRV (server.js)</li>
-      </ul>
-      <h2>How to go from this skeleton to our actual app</h2>
-      <a href="https://docs.google.com/document/d/110JdHAn3Wnp3_AyQLkqH2W8h5oby7OVsYIeHYSiUzRs/edit?usp=sharing">
-        Check out this getting started guide
-      </a>
-    </>
-  );
-};
 
+const Home = () => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+
+    function resize() {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = window.innerWidth + "px";
+      canvas.style.height = window.innerHeight + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    let x = 100;
+    const loop = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "green";
+      ctx.fillRect(x, 200, 50, 50);
+      x += 1;
+      requestAnimationFrame(loop);
+    }
+    loop();
+
+    return () => {
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} />;
+};
 export default Home;
+
+
+
+// const Home = () => {
+//   const { userId, handleLogin, handleLogout } = useContext(UserContext);
+
+//   const canvas = document.getElementById("game");
+//   const ctx = canvas.getContext("2d")
+
+//   return (
+//     <>
+//       <canvas id="game" width="150" height="150"></canvas>
+//       <script type="module" src="/main.js"></script>
+//     </>
+//   );
+// };
+
+// export default Home;

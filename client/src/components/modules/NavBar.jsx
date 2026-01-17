@@ -12,7 +12,7 @@ const NavBar = () => {
       <nav className="NavBar-container">
         <div className="NavBar-title u-inlineBlock">QuestLog</div>
         <div className="NavBar-linkContainer u-inlineBlock">
-          <Link to="/" className="NavBar-link">
+          <Link to="/home" className="NavBar-link">
             Home
           </Link>
           <Link to="/quests" className="NavBar-link">

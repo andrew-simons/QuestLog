@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const QuestSchema = new mongoose.Schema({
   id: String,
-  icon: Image,
+  icon: String,
   rairity: String, 
   name: String, 
   completed: Boolean,

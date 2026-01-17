@@ -4,10 +4,10 @@ const UserSchema = new mongoose.Schema({
   name: String,
   googleid: String,
   friends: Array,
-  level: Int32Array,
+  level: Number,
   itemsOwned: Array,
   questsCompleted: Array,
-  money: Int32Array,
+  money: Number,
 });
 
 // compile model from schema

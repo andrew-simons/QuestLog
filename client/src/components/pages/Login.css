@@ -1,0 +1,16 @@
+.button {
+  background-color: #4CAF50; /* Green background */
+  border: none; /* Remove default border */
+  color: white; /* White text */
+  padding: 15px 32px; /* Add some padding */
+  text-align: center; /* Center the text */
+  text-decoration: none; /* Remove underline from link */
+  display: inline-block; /* Make it behave like a block for styling */
+  font-size: 16px; /* Increase font size */
+  cursor: pointer; /* Change cursor to pointer on hover */
+  border-radius: 8px; /* Optional: Rounded corners */
+}
+
+.button:hover {
+  background-color: #45a049; /* Darker green on hover */
+}
