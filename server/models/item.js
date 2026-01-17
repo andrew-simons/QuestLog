@@ -1,12 +1,11 @@
 const mongoose = require("mongoose");
 
-const ItemSchema = new mongoose.Schema({
-  id: String, 
-  name: String, 
-  drawing: String,
-  purchased: Boolean,
-  cost: Number,
+const ItemsSchema = new mongoose.Schema({
+  name: String,
+  type: String, // "hat" | "outfit" | "roomDecor" | "wallpaper" | ...
+  priceCoins: Number,
+  rarity: String,
 });
 
 // compile model from schema
-module.exports = mongoose.model("item", ItemSchema);
+module.exports = mongoose.model("items", ItemsSchema);

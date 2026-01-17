@@ -6,6 +6,11 @@ import SingleQuestBlock from "./SingleQuestBlock";
 import EmptyQuestBlock from "./EmptyQuestBlock";
 
 const QuestCard = () => {
+
+  
+
+
+
   return (
     <>
       <h1>QuestCard</h1>

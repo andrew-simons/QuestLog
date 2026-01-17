@@ -1,14 +1,11 @@
 const mongoose = require("mongoose");
 
-const QuestSchema = new mongoose.Schema({
-  id: String,
-  icon: String,
-  rairity: String, 
-  name: String, 
-  completed: Boolean,
-  journalText: String,
-  journalImages: Array
+const QuestsSchema = new mongoose.Schema({
+  title: String,
+  description: String,
+  rarity: String, // "common" | "rare" | "epic" | "legendary"
+  xpReward: Number,
 });
 
 // compile model from schema
-module.exports = mongoose.model("quest", QuestSchema);
+module.exports = mongoose.model("quests", QuestsSchema);

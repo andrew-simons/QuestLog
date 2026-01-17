@@ -1,6 +1,11 @@
 const { OAuth2Client } = require("google-auth-library");
 const User = require("./models/user");
+const Room = require("./models/rooms");
+const Inventory = require("./models/inventory");
+const userQuests = require("./models/userQuests");
+
 const socketManager = require("./server-socket");
+const friendship = require("./models/friendship");
 
 // create a new OAuth client used to verify google sign-in
 //    TODO: replace with your own CLIENT_ID
@@ -17,7 +22,7 @@ function verify(token) {
     .then((ticket) => ticket.getPayload());
 }
 
-// gets user from DB, or makes a new account if it doesn't exist yet
+// gets user from DB, or makes a new account AND other DBs if it doesn't exist yet
 function getOrCreateUser(user) {
   // the "sub" field means "subject", which is a unique identifier for each user
   return User.findOne({ googleid: user.sub }).then((existingUser) => {
@@ -26,7 +31,31 @@ function getOrCreateUser(user) {
     const newUser = new User({
       name: user.name,
       googleid: user.sub,
+      createdAt: new Date(), // current date & time
+      xp: 0,
+      level: 1,
+      coins: 0,
+      equipped: {
+        beaverSkinId: "default",
+        hatItemId: "default",
+        roomThemeId: "default",
+      },
     });
+
+    const newRoom = new Room({
+      ownerUserId: newUser.id,
+      layout: { placedItems: [] },
+      updatedAt: new Date(),
+    });
+    newRoom.save();
+
+    newUser.roomId = newRoom.id; // set the room_id to the user obj
+
+    const newInv = new Inventory({
+      userId: newUser.id,
+      itemIds: [],
+    });
+    newInv.save();
 
     return newUser.save();
   });
