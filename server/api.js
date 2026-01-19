@@ -14,6 +14,8 @@ const User = require("./models/user");
 const Quest = require("./models/quest");
 const Item = require("./models/item");
 
+const { getThreeRandomDistinct } = require("./helper");
+
 // import authentication library
 const auth = require("./auth");
 
@@ -45,11 +47,40 @@ router.post("/initsocket", (req, res) => {
 // | write your API methods below!|
 // |------------------------------|
 
-router.post("")
+// sends an array of quest objects
+router.get("/currentquests", async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).send({ error: "Not logged in" });
 
+    const keys = req.user.currentQuestKeys || [];
+    console.log("keys:", keys, "len:", keys.length);
 
+    const quests = await Quest.find({ questKey: { $in: keys } });
+    console.log("quests found:", quests.length);
+    
+    res.send(quests);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ error: "Failed to get current quests" });
+  }
+});
 
+// updates + sends an array of quest objects
+router.patch("/currentquests/refresh", async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).send({ error: "Not logged in" });
 
+    const newKeys = getThreeRandomDistinct(req.user._id);
+
+    await User.findByIdAndUpdate(req.user._id, { currentQuestKeys: newKeys }, { new: true });
+
+    const quests = await Quest.find({ key: { $in: newKeys } });
+    res.send(quests);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ error: "Failed to refresh quests" });
+  }
+});
 
 // anything else falls to this "not found" case
 router.all("*", (req, res) => {

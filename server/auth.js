@@ -40,6 +40,8 @@ function getOrCreateUser(user) {
         hatItemId: "default",
         roomThemeId: "default",
       },
+      currentQuestKeys: [1, 2, 3],
+      completedQuestKeys: [],
     });
 
     const newRoom = new Room({
@@ -49,10 +51,10 @@ function getOrCreateUser(user) {
     });
     newRoom.save();
 
-    newUser.roomId = newRoom.id; // set the room_id to the user obj
+    newUser.roomId = newRoom._id; // set the room_id to the user obj
 
     const newInv = new Inventory({
-      userId: newUser.id,
+      userId: newUser._id,
       itemIds: [],
     });
     newInv.save();

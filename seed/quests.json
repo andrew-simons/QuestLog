@@ -1,0 +1,20 @@
+[
+  {
+    "questKey": 1,
+    "title": "Pull an all-nighter (for fun)",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 2,
+    "title": "Eat Liquid Nitrogen Ice Cream",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 3,
+    "title": "Attend a Nobel Laureate lecture",
+    "rarity": "Epic",
+    "xpReward": 12
+  }
+]

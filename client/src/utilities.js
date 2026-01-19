@@ -61,3 +61,19 @@ export function post(endpoint, params = {}) {
       throw `POST request to ${endpoint} failed with error:\n${error}`;
     });
 }
+
+// Helper code to make a patch request. Default parameter of empty JSON Object for params.
+// Returns a Promise to a JSON Object.
+export function patch(endpoint, params = {}) {
+  return fetch(endpoint, {
+    method: "patch",
+    headers: { "Content-type": "application/json" },
+    body: JSON.stringify(params),
+  })
+    .then(convertToJSON) // convert result to JSON object
+    .catch((error) => {
+      // give a useful error message
+      throw `PATCH request to ${endpoint} failed with error:\n${error}`;
+    });
+}
+

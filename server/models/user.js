@@ -15,6 +15,8 @@ const UserSchema = new mongoose.Schema({
     roomThemeId: String,
   },
 
+  currentQuestKeys: Array,
+  completedQuestKeys: Array,
   roomId: String,
 });
 

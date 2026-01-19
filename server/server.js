@@ -85,7 +85,9 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(reactPath, "index.html"), (err) => {
     if (err) {
       console.log("Error sending client/dist/index.html:", err.status || 500);
-      res.status(err.status || 500).send("Error sending client/dist/index.html - have you run `npm run build`?");
+      res
+        .status(err.status || 500)
+        .send("Error sending client/dist/index.html - have you run `npm run build`?");
     }
   });
 });
@@ -105,6 +107,8 @@ app.use((err, req, res, next) => {
     message: err.message,
   });
 });
+
+
 
 // hardcode port to 3000 for now
 const port = 3000;
