@@ -59,7 +59,6 @@ const App = () => {
         <UserContext.Provider value={authContextValue}>
           <Login />
         </UserContext.Provider>
-        ;
       </>
     );
   } else {
@@ -69,7 +68,6 @@ const App = () => {
           <NavBar />
           <Outlet />
         </UserContext.Provider>
-        ;
       </>
     );
   }

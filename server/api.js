@@ -65,16 +65,20 @@ router.get("/currentquests", async (req, res) => {
 
 // updates + sends an array of quest objects
 router.patch("/currentquests/refresh", async (req, res) => {
-  console.log("HIT refresh route", { hasUser: !!req.user, body: req.body });
-
   try {
     if (!req.user) return res.status(401).send({ error: "Not logged in" });
 
-    const newKeys = getThreeRandomDistinct(req.user._id);
+    const newKeys = await getThreeRandomDistinct(req.user._id);
 
-    await User.findByIdAndUpdate(req.user._id, { currentQuestKeys: newKeys }, { new: true });
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { currentQuestKeys: newKeys },
+      { new: true }
+    ).lean();
 
-    const quests = await Quest.find({ key: { $in: newKeys } });
+    req.session.user = updatedUser; // keep session updated
+
+    const quests = await Quest.find({ questKey: { $in: newKeys } });
     res.send(quests);
   } catch (err) {
     console.log(err);

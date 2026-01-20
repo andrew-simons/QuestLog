@@ -65,15 +65,19 @@ export function post(endpoint, params = {}) {
 // Helper code to make a patch request. Default parameter of empty JSON Object for params.
 // Returns a Promise to a JSON Object.
 export function patch(endpoint, params = {}) {
-  return fetch(endpoint, {
-    method: "patch",
-    headers: { "Content-type": "application/json" },
-    body: JSON.stringify(params),
-  })
-    .then(convertToJSON) // convert result to JSON object
+  const options = {
+    method: "PATCH",
+    credentials: "include", 
+  };
+
+  if (params !== undefined) {
+    options.headers = { "Content-Type": "application/json" };
+    options.body = JSON.stringify(params);
+  }
+
+  return fetch(endpoint, options)
+    .then(convertToJSON)
     .catch((error) => {
-      // give a useful error message
       throw `PATCH request to ${endpoint} failed with error:\n${error}`;
     });
 }
-

@@ -13,13 +13,13 @@ async function getThreeRandomDistinct(user_id) {
   );
   const completedQuestKeys = completed.map((q) => q.questKey);
 
-  const availableQuests = allQuests.filter((q) => !completedQuestKeys.includes(q.questKey));
+  const availableQuestKeys = allQuests.map((q) => q.questKey).filter((q) => !completedQuestKeys.includes(q.questKey));
 
-  if (availableQuests.length < 3) {
-    return availableQuests;
+  if (availableQuestKeys.length < 3) {
+    return availableQuestKeys;
   }
 
-  const shuffled = [...availableQuests].sort(() => Math.random() - 0.5);
+  const shuffled = [...availableQuestKeys].sort(() => Math.random() - 0.5);
   const selected = shuffled.slice(0, 3);
 
   return selected;
