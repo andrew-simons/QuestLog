@@ -22,5 +22,29 @@
     "title": "Do some volunteer work",
     "rarity": "Rare",
     "xpReward": 5
+  },
+  {
+    "questKey": 5,
+    "title": "Enjoy a day on the Charles",
+    "rarity": "Common",
+    "xpReward": 3
+  },
+  {
+    "questKey": 6,
+    "title": "Have dinner with a professor",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 7,
+    "title": "Learn the building numbers",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 8,
+    "title": "Take an undergraduate seminar",
+    "rarity": "Epic",
+    "xpReward": 12
   }
 ]

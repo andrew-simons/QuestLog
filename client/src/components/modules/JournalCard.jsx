@@ -1,31 +1,24 @@
 import React from "react";
-
-import "../../utilities.css";
-import { UserContext } from "../App";
-
 import SingleJournalBlock from "./SingleJournalBlock";
 
-
-/**
- * Component to render a the journal quest blocks
- *
- * Proptypes`
- * @param {boolean} loading
- * @param {boolean} refreshing
- * @param {Array} currentQuests Array of 3 quest objects
- */
 const JournalCard = (props) => {
+  if (props.loading) return <p>Loading...</p>;
+  if (!props.completedQuests || props.completedQuests.length === 0) {
+    return <p>No completed quests yet.</p>;
+  }
+
   return (
-    <>
-      <h5>JournalCard</h5>
-      {props.loading ? (
-        <p>Loading...</p>
-      ) : props.currentQuests.length === 0 ? (
-        <p>No current journals yet.</p>
-      ) : (
-        props.currentQuests.map((quest) => <SingleJournalBlock key={quest.questKey} quest={quest} />)
-      )}
-    </>
+    <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
+      {props.completedQuests.map((quest) => (
+        <SingleJournalBlock
+          key={quest.questKey}
+          quest={quest}
+          journal={props.getJournalFor(quest.questKey)}
+          onSave={(updates) => props.onSaveJournal(quest.questKey, updates)}
+          saving={props.savingKey === quest.questKey}
+        />
+      ))}
+    </div>
   );
 };
 

@@ -1,5 +1,4 @@
 // Helper Methods
-const User = require("./models/user");
 const Quest = require("./models/quest");
 const UserQuests = require("./models/userQuests");
 
@@ -13,7 +12,9 @@ async function getThreeRandomDistinct(user_id) {
   );
   const completedQuestKeys = completed.map((q) => q.questKey);
 
-  const availableQuestKeys = allQuests.map((q) => q.questKey).filter((q) => !completedQuestKeys.includes(q.questKey));
+  const availableQuestKeys = allQuests
+    .map((q) => q.questKey)
+    .filter((key) => !completedQuestKeys.includes(key));
 
   if (availableQuestKeys.length < 3) {
     return availableQuestKeys;
@@ -21,6 +22,10 @@ async function getThreeRandomDistinct(user_id) {
 
   const shuffled = [...availableQuestKeys].sort(() => Math.random() - 0.5);
   const selected = shuffled.slice(0, 3);
+
+  console.log(completed);
+  console.log(completedQuestKeys);
+  console.log(availableQuestKeys);
 
   return selected;
 }

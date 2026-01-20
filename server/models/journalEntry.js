@@ -1,13 +1,17 @@
 const mongoose = require("mongoose");
 
-const JournalEntriesSchema = new mongoose.Schema({
-  userId: String,
-  questId: String, // optional if it’s a “general entry”
+const JournalEntrySchema = new mongoose.Schema(
+  {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
+    questKey: { type: Number, required: true }, // 1 doc per completed quest
 
-  text: String,
-  photoUrls: [String],
-  createdAt: Date,
-});
+    text: { type: String, default: "" },
+    photoUrls: { type: [String], default: [] },
+  },
+  { timestamps: true } // gives createdAt + updatedAt automatically
+);
 
-// compile model from schema
-module.exports = mongoose.model("journalEntries", JournalEntriesSchema);
+// enforce 1 per quest per user
+JournalEntrySchema.index({ userId: 1, questKey: 1 }, { unique: true });
+
+module.exports = mongoose.model("journalEntries", JournalEntrySchema);
