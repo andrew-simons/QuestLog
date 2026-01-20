@@ -13,6 +13,7 @@ const express = require("express");
 const User = require("./models/user");
 const Quest = require("./models/quest");
 const Item = require("./models/item");
+const UserQuest = require("./models/userQuests");
 
 const { getThreeRandomDistinct } = require("./helper");
 
@@ -85,6 +86,82 @@ router.patch("/currentquests/refresh", async (req, res) => {
     res.status(500).send({ error: "Failed to refresh quests" });
   }
 });
+
+// GET all userQuest docs for the currently logged-in user
+router.get("/userquests", (req, res) => {
+  if (!req.user) {
+    return res.status(401).send({ error: "Not logged in" });
+  }
+
+  UserQuest.find({ userId: req.user._id })
+    .then((userQuests) => {
+      res.send(userQuests); // array of docs
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).send({ error: "Failed to fetch user quests" });
+    });
+});
+
+router.patch("/userquests", async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).send({ error: "Not logged in" });
+    }
+
+    let { questKey, isCompleted } = req.body;
+
+    // ---- Validation ----
+    if (questKey === undefined || questKey === null) {
+      return res.status(400).send({ error: "questKey is required" });
+    }
+    if (typeof isCompleted !== "boolean") {
+      return res.status(400).send({ error: "isCompleted must be a boolean" });
+    }
+
+    // Make sure questKey is a Number 
+    questKey = Number(questKey);
+    if (Number.isNaN(questKey)) {
+      return res.status(400).send({ error: "questKey must be a number" });
+    }
+
+    const filter = {
+      userId: req.user._id,
+      questKey: questKey,
+    };
+
+    const update = {
+      $set: {
+        isCompleted,
+        completedAt: isCompleted ? new Date() : null,
+      },
+      $setOnInsert: {
+        userId: req.user._id,
+        questKey: questKey,
+      },
+    };
+
+    const options = {
+      new: true,
+      upsert: true,
+      runValidators: true,
+    };
+
+    const doc = await UserQuest.findOneAndUpdate(filter, update, options);
+    res.send(doc);
+  } catch (err) {
+    console.error(err);
+
+    if (err.code === 11000) {
+      return res.status(409).send({ error: "Duplicate quest record" });
+    }
+
+    res.status(500).send({ error: "Failed to update user quest" });
+  }
+});
+
+
+
 
 // anything else falls to this "not found" case
 router.all("*", (req, res) => {

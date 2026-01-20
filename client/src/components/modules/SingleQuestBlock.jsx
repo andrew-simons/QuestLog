@@ -1,19 +1,30 @@
 import React from "react";
-
 import "../../utilities.css";
-import { UserContext } from "../App";
 
 /**
- * Component to render a single quest block
- *
- * Proptypes
- * @param {object} quest Quest object with keys: questKey, title, rarity, xpReward
+ * Props:
+ * - quest: { questKey, title, rarity, xpReward }
+ * - isCompleted: boolean
+ * - onToggle: (newVal: boolean) => void
+ * - saving: boolean
  */
 const SingleQuestBlock = (props) => {
+  const { quest, isCompleted, onToggle, saving } = props;
+
   return (
     <span>
-      <h3>{props.quest.title}</h3>
-      <input type="checkbox" name="idk" value="on" />
+      <hr />
+      <h3>{quest.title}</h3>
+      <p>
+        Rarity: {quest.rarity}; XP Reward: {quest.xpReward}
+      </p>
+
+      <input
+        type="checkbox"
+        checked={isCompleted}
+        onChange={(e) => onToggle(e.target.checked)}
+        disabled={saving}
+      />
     </span>
   );
 };
