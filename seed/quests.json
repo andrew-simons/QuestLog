@@ -16,5 +16,11 @@
     "title": "Attend a Nobel Laureate lecture",
     "rarity": "Epic",
     "xpReward": 12
+  },
+  {
+    "questKey": 4,
+    "title": "Do some volunteer work",
+    "rarity": "Rare",
+    "xpReward": 5
   }
 ]

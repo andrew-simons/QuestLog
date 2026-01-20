@@ -41,7 +41,10 @@ const Home = () => {
     };
   }, []);
 
-  return <canvas ref={canvasRef} />;
+  return <>
+  <p></p>
+  
+  <canvas ref={canvasRef} /></>;
 };
 export default Home;
 

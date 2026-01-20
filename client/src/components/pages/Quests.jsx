@@ -14,7 +14,6 @@ const Quests = () => {
     setLoading(true);
     get("/api/currentquests")
       .then((quests) => {
-        console.log(quests);
         setCurrentQuests(quests);
       })
       .catch((err) => console.log(err))

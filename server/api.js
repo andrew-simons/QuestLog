@@ -53,11 +53,9 @@ router.get("/currentquests", async (req, res) => {
     if (!req.user) return res.status(401).send({ error: "Not logged in" });
 
     const keys = req.user.currentQuestKeys || [];
-    console.log("keys:", keys, "len:", keys.length);
 
     const quests = await Quest.find({ questKey: { $in: keys } });
-    console.log("quests found:", quests.length);
-    
+
     res.send(quests);
   } catch (err) {
     console.log(err);
@@ -67,6 +65,8 @@ router.get("/currentquests", async (req, res) => {
 
 // updates + sends an array of quest objects
 router.patch("/currentquests/refresh", async (req, res) => {
+  console.log("HIT refresh route", { hasUser: !!req.user, body: req.body });
+
   try {
     if (!req.user) return res.status(401).send({ error: "Not logged in" });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, createContext } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 
 import jwt_decode from "jwt-decode";
 
@@ -10,6 +10,7 @@ import { socket } from "../client-socket";
 import { get, post } from "../utilities";
 
 import NavBar from "./modules/NavBar";
+import Login from "./pages/Login";
 
 export const UserContext = createContext(null);
 
@@ -17,6 +18,7 @@ export const UserContext = createContext(null);
  * Define the "App" component
  */
 const App = () => {
+  const navigate = useNavigate();
   const [userId, setUserId] = useState(undefined);
 
   useEffect(() => {
@@ -36,11 +38,13 @@ const App = () => {
       setUserId(user._id);
       post("/api/initsocket", { socketid: socket.id });
     });
+    navigate("/home", { replace: true });
   };
 
   const handleLogout = () => {
     setUserId(undefined);
     post("/api/logout");
+    navigate("/", { replace: true });
   };
 
   const authContextValue = {
@@ -49,12 +53,26 @@ const App = () => {
     handleLogout,
   };
 
-  return (
-    <UserContext.Provider value={authContextValue}>
-      <NavBar />
-      <Outlet />
-    </UserContext.Provider>
-  );
+  if (userId === undefined) {
+    return (
+      <>
+        <UserContext.Provider value={authContextValue}>
+          <Login />
+        </UserContext.Provider>
+        ;
+      </>
+    );
+  } else {
+    return (
+      <>
+        <UserContext.Provider value={authContextValue}>
+          <NavBar />
+          <Outlet />
+        </UserContext.Provider>
+        ;
+      </>
+    );
+  }
 };
 
 export default App;
