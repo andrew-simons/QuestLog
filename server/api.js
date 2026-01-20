@@ -234,12 +234,6 @@ router.patch("/userquests", async (req, res) => {
   }
 });
 
-router.get("/completedquests", async (req, res) => {
-  const completed = await UserQuest.find({ userId, isCompleted: true }).select("questKey");
-  const keys = completed.map((d) => d.questKey);
-  res.send(keys)
-});
-
 /**
  * GET /api/journal
  * Returns completed quests + their single editable journal docs (if they exist).
@@ -257,7 +251,6 @@ router.get("/journal", async (req, res) => {
 
     if (keys.length === 0) return res.send({ quests: [], journals: [] });
 
-    // fetch quest metadata
     const quests = await Quest.find({ questKey: { $in: keys } });
 
     // fetch existing journals (some may not exist yet)

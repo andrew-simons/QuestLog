@@ -8,7 +8,7 @@ const JournalCard = (props) => {
   }
 
   return (
-    <div style={{ maxHeight: "70vh", overflowY: "auto" }}>
+    <div style={{  overflowY: "auto" }}>
       {props.completedQuests.map((quest) => (
         <SingleJournalBlock
           key={quest.questKey}

@@ -21,11 +21,6 @@ const NavBar = () => {
         <Link to="/journal" className="NavBar-link">
           Journal
         </Link>
-        {userId && (
-          <Link to={`/`} className="NavBar-link">
-            etc
-          </Link>
-        )}
         {userId ? (
           <button className="NavBar-link NavBar-login u-inlineBlock" onClick={handleLogout}>
             Sign out
