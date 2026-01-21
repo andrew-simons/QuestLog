@@ -21,9 +21,9 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 function useAssets() {
   const manifest = useMemo(
     () => ({
-      roomBg: "/dist/public/img/room.png",
-      beaverSheet: "/dist/public/img/beaver.png", // single 64x64 image for now    // sprite sheet
-      chair: "/dist/public/img/items/chair.png",
+      roomBg: "/img/room.png",
+      beaverSheet: "/img/beaver.png", // single 64x64 image for now    // sprite sheet
+      chair: "/img/items/chair.png",
       // lamp: "/assets/items/lamp.png",
       // ... add more
     }),
@@ -115,7 +115,7 @@ function getBeaverFrameRect(dir, frameIndex) {
   // const col = frameIndex % cols;
 
   // return { sx: col * frameW, sy: row * frameH, sw: frameW, sh: frameH };
-  return { sx: 0, sy: 0, sw: 250, sh: 250 };
+  return { sx: 0, sy: 0, sw: 64, sh: 64 };
 }
 
 // ---------- Hit test ----------
@@ -149,8 +149,8 @@ function Home() {
 
   const worldRef = useRef({
     beaver: {
-      x: 525,
-      y: 510,
+      x: 200,
+      y: 480,
       dir: "down",
       speed: 220, // world units / sec
       frameIndex: 0,
