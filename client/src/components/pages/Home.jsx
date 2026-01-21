@@ -42,7 +42,7 @@ function useAssets() {
         return new Promise((resolve, reject) => {
           const img = new Image();
           img.onload = () => resolve([key, img]);
-          img.onerror = reject;
+          img.onerror = () => reject(new Error(`Failed to load ${key}: ${src}`));
           img.src = src;
         });
       })
