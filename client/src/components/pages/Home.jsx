@@ -21,9 +21,9 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 function useAssets() {
   const manifest = useMemo(
     () => ({
-      roomBg: "/src/public/img/room.png",
-      beaverSheet: "/src/public/img/beaver.png", // single 64x64 image for now    // sprite sheet
-      chair: "/src/public/img/items/chair.png",
+      roomBg: "/public/img/room.png",
+      beaverSheet: "/public/img/beaver.png", // single 64x64 image for now    // sprite sheet
+      chair: "/public/img/items/chair.png",
       // lamp: "/assets/items/lamp.png",
       // ... add more
     }),
