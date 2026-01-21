@@ -115,7 +115,7 @@ function getBeaverFrameRect(dir, frameIndex) {
   // const col = frameIndex % cols;
 
   // return { sx: col * frameW, sy: row * frameH, sw: frameW, sh: frameH };
-  return { sx: 0, sy: 0, sw: 64, sh: 64 };
+  return { sx: 0, sy: 0, sw: 250, sh: 250 };
 }
 
 // ---------- Hit test ----------
@@ -149,8 +149,8 @@ function Home() {
 
   const worldRef = useRef({
     beaver: {
-      x: 200,
-      y: 480,
+      x: 525,
+      y: 510,
       dir: "down",
       speed: 220, // world units / sec
       frameIndex: 0,
