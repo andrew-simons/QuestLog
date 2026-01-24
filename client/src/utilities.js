@@ -81,3 +81,28 @@ export function patch(endpoint, params = {}) {
       throw `PATCH request to ${endpoint} failed with error:\n${error}`;
     });
 }
+
+// Helper code to make a delete request. Default parameter of undefined body and empty params.
+// Returns a Promise to a JSON Object.
+export function del(endpoint, params = {}, body = undefined) {
+  const hasParams = params && Object.keys(params).length > 0;
+  const fullPath = hasParams ? endpoint + "?" + formatParams(params) : endpoint;
+
+  const options = {
+    method: "DELETE",
+    credentials: "include",
+  };
+
+  // Optional JSON body (some DELETE endpoints use it; yours doesn't have to)
+  if (body !== undefined) {
+    options.headers = { "Content-Type": "application/json" };
+    options.body = JSON.stringify(body);
+  }
+
+  return fetch(fullPath, options)
+    .then(convertToJSON)
+    .catch((error) => {
+      throw `DELETE request to ${fullPath} failed with error:\n${error}`;
+    });
+}
+

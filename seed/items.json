@@ -1,0 +1,14 @@
+[
+  {
+    "key": "chair_basic",
+    "name": "Wooden Chair",
+    "type": "roomDecor",
+    "priceCoins": 50,
+    "rarity": "common",
+    "imageKey": "chair",
+    "defaultScale": 0.7,
+    "maxOwned": 1,
+    "anchor": "bottomCenter",
+    "isAvailable": true
+  }
+]

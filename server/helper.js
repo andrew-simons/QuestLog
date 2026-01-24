@@ -30,4 +30,8 @@ async function getThreeRandomDistinct(user_id) {
   return selected;
 }
 
-module.exports = { getThreeRandomDistinct };
+function xpRequiredForLevel(level) {
+  return Math.floor(50 * level ** 1.5);
+}
+
+module.exports = { getThreeRandomDistinct, xpRequiredForLevel };

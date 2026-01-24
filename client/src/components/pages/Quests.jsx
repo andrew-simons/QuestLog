@@ -20,9 +20,7 @@ const Quests = () => {
     setLoading(true);
     Promise.all([get("/api/currentquests"), get("/api/userquests")])
       .then(([quests, userQuests]) => {
-
         setCurrentQuests(quests);
-        
 
         const map = new Map();
         userQuests.forEach((uq) => map.set(uq.questKey, uq));
@@ -53,17 +51,22 @@ const Quests = () => {
       const prevDoc = next.get(questKey) || { questKey };
       next.set(questKey, { ...prevDoc, questKey, isCompleted });
 
-      console.log("BUTTON TOGGLED SUCCESSFULLY")
+      console.log("BUTTON TOGGLED SUCCESSFULLY");
       return next;
     });
 
     patch("/api/userquests", { questKey, isCompleted })
-      .then((serverDoc) => {
+      .then((serverResp) => {
         setUserQuestByKey((prev) => {
           const next = new Map(prev);
-          next.set(questKey, serverDoc); // authoritative doc from server
+          next.set(questKey, serverResp.userQuest); // ✅ store the actual doc
           return next;
         });
+
+        if (serverResp.awarded) {
+          console.log("Awarded:", serverResp.awarded);
+          // e.g. toast(`+${serverResp.awarded.coins} coins, +${serverResp.awarded.exp} XP!`)
+        }
       })
       .catch((err) => {
         console.log(err);

@@ -1,10 +1,21 @@
 const mongoose = require("mongoose");
+const PlacedItemSchema = require("./placedItems");
 
-const RoomsSchema = new mongoose.Schema({
-  ownerUserId: String, // ref users
-  layout: Object, // e.g. { placedItems: [ { itemId, x, y, rotation } ] }
-  updatedAt: Date,
-});
+const RoomSchema = new mongoose.Schema(
+  {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "user", unique: true, required: true },
+    wallpaperKey: { type: String, default: "default_wallpaper" },
+
+    beaver: {
+      x: { type: Number, default: 200 },
+      y: { type: Number, default: 480 },
+      dir: { type: String, default: "down" },
+    },
+
+    placedItems: { type: [PlacedItemSchema], default: [] },
+  },
+  { timestamps: true }
+);
 
 // compile model from schema
-module.exports = mongoose.model("rooms", RoomsSchema);
+module.exports = mongoose.model("rooms", RoomSchema);

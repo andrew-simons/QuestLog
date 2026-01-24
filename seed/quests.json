@@ -1,50 +1,608 @@
 [
   {
     "questKey": 1,
-    "title": "Pull an all-nighter (for fun)",
+    "title": "Learn all the course and building numbers",
     "rarity": "Rare",
     "xpReward": 5
   },
   {
     "questKey": 2,
-    "title": "Eat Liquid Nitrogen Ice Cream",
-    "rarity": "Epic",
-    "xpReward": 12
+    "title": "Participate in a UROP… or two",
+    "rarity": "Common",
+    "xpReward": 3
   },
   {
     "questKey": 3,
-    "title": "Attend a Nobel Laureate lecture",
+    "title": "Ace a test",
     "rarity": "Epic",
     "xpReward": 12
   },
   {
     "questKey": 4,
-    "title": "Do some volunteer work",
+    "title": "Play on an intramural sports team",
     "rarity": "Rare",
     "xpReward": 5
   },
   {
     "questKey": 5,
-    "title": "Enjoy a day on the Charles",
+    "title": "Pass the swim test",
     "rarity": "Common",
     "xpReward": 3
   },
   {
     "questKey": 6,
-    "title": "Have dinner with a professor",
-    "rarity": "Epic",
-    "xpReward": 12
+    "title": "Show off your Boston sports pride",
+    "rarity": "Rare",
+    "xpReward": 5
   },
   {
     "questKey": 7,
-    "title": "Learn the building numbers",
+    "title": "Go to Tosci’s for ice cream",
+    "rarity": "Common",
+    "xpReward": 3
+  },
+  {
+    "questKey": 8,
+    "title": "Use your MIT ID to go to the MFA for free",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 9,
+    "title": "Jump in and take a selfie with a tourist",
+    "rarity": "Common",
+    "xpReward": 3
+  },
+  {
+    "questKey": 10,
+    "title": "Take free sailing lessons at the pavilion",
     "rarity": "Epic",
     "xpReward": 12
   },
   {
-    "questKey": 8,
-    "title": "Take an undergraduate seminar",
+    "questKey": 11,
+    "title": "Watch the sun set and rise from the Harvard Bridge",
+    "rarity": "Common",
+    "xpReward": 3
+  },
+  {
+    "questKey": 12,
+    "title": "Go window shopping on Newbury Street",
     "rarity": "Epic",
     "xpReward": 12
+  },
+  {
+    "questKey": 13,
+    "title": "Go to an outdoor concert",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 14,
+    "title": "Take a stroll through Little Italy in the North End",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 15,
+    "title": "Take a ride on a swan boat in Boston Commons",
+    "rarity": "Legendary",
+    "xpReward": 30
+  },
+  {
+    "questKey": 16,
+    "title": "Take a road trip to an away game for MIT sports",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 17,
+    "title": "Get to know your professors outside of class",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 18,
+    "title": "Find your new favorite food truck",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 19,
+    "title": "Enjoy a free steak and lobster dinner during rush",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 20,
+    "title": "Attend a MITSO concert in Kresge",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 21,
+    "title": "Take a class during IAP",
+    "rarity": "Common",
+    "xpReward": 3
+  },
+  {
+    "questKey": 22,
+    "title": "Check out the parks on Rose Kennedy Greenway",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 23,
+    "title": "Get dressed up for a formal",
+    "rarity": "Common",
+    "xpReward": 3
+  },
+  {
+    "questKey": 24,
+    "title": "Walk the Freedom Trail",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 25,
+    "title": "Go to the Skywalk Observatory in Prudential",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 26,
+    "title": "Check out the view from the ICA",
+    "rarity": "Epic",
+    "xpReward": 3
+  },
+  {
+    "questKey": 27,
+    "title": "Zip around the ice rink at Spooky Skate",
+    "rarity": "Legendary",
+    "xpReward": 30
+  },
+  {
+    "questKey": 28,
+    "title": "Behold Boston’s 4th of July fireworks",
+    "rarity": "Legendary",
+    "xpReward": 30
+  },
+  {
+    "questKey": 29,
+    "title": "Host an incoming first-year during CPW",
+    "rarity": "Common",
+    "xpReward": 3
+  },
+  {
+    "questKey": 30,
+    "title": "Build a snow fort on Killian",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 31,
+    "title": "Take a 48-hour social media cleanse",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 32,
+    "title": "Try something new in a PE class",
+    "rarity": "Common",
+    "xpReward": 3
+  },
+  {
+    "questKey": 33,
+    "title": "Be an Associate Advisor",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 34,
+    "title": "Visit all the dorms",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 35,
+    "title": "Go to an event advertised in the infinite corridor",
+    "rarity": "Common",
+    "xpReward": 3
+  },
+  {
+    "questKey": 36,
+    "title": "Cross register at Harvard",
+    "rarity": "Legendary",
+    "xpReward": 30
+  },
+  {
+    "questKey": 37,
+    "title": "Watch an LSC (Lecture Series Committee) movie",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 38,
+    "title": "Take a selfie with TIM the beaver",
+    "rarity": "Legendary",
+    "xpReward": 30
+  },
+  {
+    "questKey": 39,
+    "title": "Enjoy a game of candlepin bowling",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 40,
+    "title": "Drink only water for a week",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 41,
+    "title": "Sleep in Barker",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 42,
+    "title": "Get a burger at Tasty Burger",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 43,
+    "title": "Attend the 2.007 competition",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 44,
+    "title": "Run/volunteer/go to the Boston Marathon",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 45,
+    "title": "Taking a picture with the Make Way for Ducklings Statue",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 46,
+    "title": "Enjoy a summer at MIT",
+    "rarity": "Common",
+    "xpReward": 3
+  },
+  {
+    "questKey": 47,
+    "title": "Have liquid nitrogen ice cream",
+    "rarity": "Rare",
+    "xpReward": 3
+  },
+  {
+    "questKey": 48,
+    "title": "Explore Castle Island in South Boston",
+    "rarity": "Legendary",
+    "xpReward": 30
+  },
+  {
+    "questKey": 49,
+    "title": "Go to an improv show",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 50,
+    "title": "Get your brass rat at ring delivery",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 51,
+    "title": "Go to Boston Public Library",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 52,
+    "title": "Walk to the Harvard Arboretum",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 53,
+    "title": "Go to the Lawn on D",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 54,
+    "title": "Go to Mr. Bartley’s for a frappe",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 55,
+    "title": "Go to the great glass pumpkin patch",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 56,
+    "title": "Nap on Killian Court",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 57,
+    "title": "Visit the Kendall rooftop garden",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 58,
+    "title": "Get a Red Sox ticket from MITAC",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 59,
+    "title": "Grab a gumball from the OFY",
+    "rarity": "Common",
+    "xpReward": 3
+  },
+  {
+    "questKey": 60,
+    "title": "Watch tetris on the Green Building",
+    "rarity": "Legendary",
+    "xpReward": 30
+  },
+  {
+    "questKey": 61,
+    "title": "See penguins at the New England Aquarium",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 62,
+    "title": "Go on a Duck Tour",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 63,
+    "title": "Ride all the T lines",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 64,
+    "title": "Find your favorite place in Quincy Market",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 65,
+    "title": "Be an Orientation Leader",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 66,
+    "title": "Ride an orange trolley",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 67,
+    "title": "Earn a pirate’s license",
+    "rarity": "Legendary",
+    "xpReward": 30
+  },
+  {
+    "questKey": 68,
+    "title": "Take the T to Revere Beach",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 69,
+    "title": "Check out the Tree Lighting ceremony in Boston Commons",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 70,
+    "title": "Go to Haymarket",
+    "rarity": "Common",
+    "xpReward": 3
+  },
+  {
+    "questKey": 71,
+    "title": "Eat at every dining hall",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 72,
+    "title": "Study abroad",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 73,
+    "title": "Take a Boston harbor ferry ride",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 74,
+    "title": "Go to a block party at City Hall Plaza",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 75,
+    "title": "Send a postcard home",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 76,
+    "title": "Get a Flour Rasberry Seltzer",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 77,
+    "title": "Get 25 free t-shirts",
+    "rarity": "Common",
+    "xpReward": 3
+  },
+  {
+    "questKey": 78,
+    "title": "People watch in Lobby 10",
+    "rarity": "Common",
+    "xpReward": 3
+  },
+  {
+    "questKey": 79,
+    "title": "Go to the Pride Parade",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 80,
+    "title": "Eat at Mike’s Pastries",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 81,
+    "title": "Walk 364.4 smoots across the bridge",
+    "rarity": "Common",
+    "xpReward": 3
+  },
+  {
+    "questKey": 82,
+    "title": "Green Building Stairs Challenge",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 83,
+    "title": "Get boba in Chinatown",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 84,
+    "title": "Master the tunnels",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 85,
+    "title": "Visit the Mapparium",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 86,
+    "title": "Go to an Acapella concert",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 87,
+    "title": "Host a study break",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 88,
+    "title": "Volunteer for a campus event",
+    "rarity": "Common",
+    "xpReward": 3
+  },
+  {
+    "questKey": 89,
+    "title": "Pretend to be a prefrosh during CPW",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 90,
+    "title": "Met 10 MIT people from 10 countries",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 91,
+    "title": "Tie dye a shirt",
+    "rarity": "Common",
+    "xpReward": 3
+  },
+  {
+    "questKey": 92,
+    "title": "Watch Head of the Charles",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 93,
+    "title": "Hack something",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 94,
+    "title": "Visit all of the Cambridge squares",
+    "rarity": "Legendary",
+    "xpReward": 30
+  },
+  {
+    "questKey": 95,
+    "title": "Find your favorite coffee shop",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 96,
+    "title": "Do a PKG service trip",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 97,
+    "title": "Attend Career fair",
+    "rarity": "Common",
+    "xpReward": 3
+  },
+  {
+    "questKey": 98,
+    "title": "Visit the MIT museum ",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 99,
+    "title": "Find the hidden Kenmore Bodega",
+    "rarity": "Epic",
+    "xpReward": 12
+  },
+  {
+    "questKey": 100,
+    "title": "Attend Senior Week",
+    "rarity": "Rare",
+    "xpReward": 5
+  },
+  {
+    "questKey": 101,
+    "title": "Earn your degree",
+    "rarity": "Legendary",
+    "xpReward": 30
   }
 ]

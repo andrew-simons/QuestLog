@@ -7,8 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "nodemon", 
-    "seed:quests": "node seed/seedScriptQuests.js"
+    "start": "nodemon",
+    "seed:quests": "node seed/seedScriptQuests.js",
+    "seed:items": "node seed/seedScriptItems.js"
   },
   "repository": {
     "type": "git",

@@ -15,8 +15,10 @@ const Quest = require("./models/quest");
 const Item = require("./models/item");
 const UserQuest = require("./models/userQuests");
 const JournalEntry = require("./models/journalEntry");
+const Room = require("./models/rooms");
+const Inventory = require("./models/inventory");
 
-const { getThreeRandomDistinct } = require("./helper");
+const { getThreeRandomDistinct, xpRequiredForLevel } = require("./helper");
 
 // import authentication library
 const auth = require("./auth");
@@ -82,7 +84,7 @@ router.get("/currentquests", async (req, res) => {
 });
 
 /**
- * GET /api/currentquests
+ * PATCH /api/currentquests
  * Returns the user's current quests (Quest documents) based on req.user.currentQuestKeys.
  *
  * Auth: Required.
@@ -179,9 +181,7 @@ router.get("/userquests", (req, res) => {
  */
 router.patch("/userquests", async (req, res) => {
   try {
-    if (!req.user) {
-      return res.status(401).send({ error: "Not logged in" });
-    }
+    if (!req.user) return res.status(401).send({ error: "Not logged in" });
 
     let { questKey, isCompleted } = req.body;
 
@@ -193,17 +193,50 @@ router.patch("/userquests", async (req, res) => {
       return res.status(400).send({ error: "isCompleted must be a boolean" });
     }
 
-    // Make sure questKey is a Number
     questKey = Number(questKey);
     if (Number.isNaN(questKey)) {
       return res.status(400).send({ error: "questKey must be a number" });
     }
 
-    const filter = {
-      userId: req.user._id,
-      questKey: questKey,
+    // ---- Reward maps ----
+    const COINS_BY_RARITY = {
+      common: 10,
+      rare: 25,
+      epic: 60,
+      legendary: 150,
     };
 
+    // If your Quest model already stores expReward, you can ignore this map
+    const EXP_BY_RARITY = {
+      common: 10,
+      rare: 25,
+      epic: 60,
+      legendary: 150,
+    };
+
+    // ---- Look up the quest to get rarity (and expReward if you store it) ----
+    const quest = await Quest.findOne({ questKey });
+    if (!quest) return res.status(400).send({ error: "Invalid questKey (quest not found)" });
+
+    const rarityRaw = quest.rarity ?? quest.rarityLevel ?? quest.tier; // adjust to your schema
+    const rarity = String(rarityRaw || "").toLowerCase();
+
+    if (!COINS_BY_RARITY[rarity]) {
+      return res.status(500).send({ error: `Unknown rarity on quest: ${rarityRaw}` });
+    }
+
+    const coinsAward = COINS_BY_RARITY[rarity];
+    const expAward = typeof quest.expReward === "number" ? quest.expReward : EXP_BY_RARITY[rarity];
+
+    const filter = { userId: req.user._id, questKey };
+
+    // Fetch current completion state so we only award once
+    const existing = await UserQuest.findOne(filter);
+
+    const wasCompleted = !!existing?.isCompleted;
+    const isNowCompleting = !wasCompleted && isCompleted === true;
+
+    // ---- Update/Upsert the UserQuest doc ----
     const update = {
       $set: {
         isCompleted,
@@ -211,18 +244,35 @@ router.patch("/userquests", async (req, res) => {
       },
       $setOnInsert: {
         userId: req.user._id,
-        questKey: questKey,
+        questKey,
       },
     };
 
-    const options = {
-      new: true,
-      upsert: true,
-      runValidators: true,
-    };
+    const options = { new: true, upsert: true, runValidators: true };
 
+    // If you want true atomicity for rewards + completion, use a transaction.
+    // This version works without transactions but still prevents double-awards logically.
     const doc = await UserQuest.findOneAndUpdate(filter, update, options);
-    res.send(doc);
+
+    // ---- Award rewards only on first completion ----
+    if (isNowCompleting) {
+      await User.findByIdAndUpdate(
+        req.user._id,
+        {
+          $inc: {
+            coins: coinsAward,
+            xp: expAward,
+          },
+        },
+        { new: false }
+      );
+    }
+
+    // Optionally return rewards info to the frontend
+    return res.send({
+      userQuest: doc,
+      awarded: isNowCompleting ? { coins: coinsAward, exp: expAward, rarity } : null,
+    });
   } catch (err) {
     console.error(err);
 
@@ -307,6 +357,296 @@ router.patch("/journal", async (req, res) => {
     res.status(500).send({ error: "Failed to update journal" });
   }
 });
+
+// GET /api/items - returns the full shop catalog
+router.get("/items", async (req, res) => {
+  try {
+    const items = await Item.find({}).lean();
+    res.send(items);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ error: "Failed to fetch items" });
+  }
+});
+
+// GET /api/inventory - returns what the user owns
+router.get("/inventory", async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).send({ error: "Not logged in" });
+
+    const rows = await Inventory.find({ userId: req.user._id }).lean();
+    res.send(rows);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ error: "Failed to fetch inventory" });
+  }
+});
+
+// GET /api/room - load (or create) the user's room
+router.get("/room", async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).send({ error: "Not logged in" });
+
+    let room = await Room.findOne({ userId: req.user._id }).lean();
+
+    if (!room) {
+      const created = await Room.create({ userId: req.user._id });
+      room = created.toObject();
+    }
+
+    res.send(room);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ error: "Failed to load room" });
+  }
+});
+
+// POST /api/shop/buy - buy an item using coins
+router.post("/shop/buy", async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).send({ error: "Not logged in" });
+
+    const { itemKey } = req.body;
+    if (!itemKey || typeof itemKey !== "string") {
+      return res.status(400).send({ error: "itemKey is required" });
+    }
+
+    const item = await Item.findOne({ key: itemKey }).lean();
+    if (!item) return res.status(404).send({ error: "Item not found" });
+
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).send({ error: "User not found" });
+
+    const inv = await Inventory.findOne({ userId: user._id, itemKey }).lean();
+    const qtyOwned = inv ? inv.qty : 0;
+
+    if (qtyOwned >= (item.maxOwned ?? 1)) {
+      return res.status(400).send({ error: "Already owned max quantity" });
+    }
+
+    const price = item.priceCoins ?? 0;
+    if ((user.coins ?? 0) < price) {
+      return res.status(400).send({ error: "Not enough coins" });
+    }
+
+    user.coins = (user.coins ?? 0) - price;
+    await user.save();
+
+    const updatedInv = await Inventory.findOneAndUpdate(
+      { userId: user._id, itemKey },
+      { $setOnInsert: { userId: user._id, itemKey }, $inc: { qty: 1 } },
+      { new: true, upsert: true, runValidators: true }
+    ).lean();
+
+    // keep session updated (so whoami shows new coins immediately)
+    req.session.user = user.toObject ? user.toObject() : user;
+
+    res.send({ ok: true, coins: user.coins, itemKey, qty: updatedInv.qty });
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ error: "Failed to buy item" });
+  }
+});
+
+// GET current user's stats
+router.get("/user/stats", async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).send({ error: "Not logged in" });
+    }
+
+    // req.user is often a Mongoose doc, but safest is to fetch fresh
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).send({ error: "User not found" });
+
+    const level = user.level ?? 1;
+    const xp = user.xp ?? 0;
+    const xpToNext = xpRequiredForLevel(level);
+
+    res.send({ level, xp, xpToNext });
+  } catch (err) {
+    console.log("GET /user/stats failed", err);
+    res.status(500).send({ error: "Failed to fetch user stats" });
+  }
+});
+
+router.post("/user/xp", async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).send({ error: "Not logged in" });
+
+    const amount = Number(req.body.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).send({ error: "Invalid XP amount" });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).send({ error: "User not found" });
+
+    // add XP + level up loop
+    user.xp = (user.xp ?? 0) + amount;
+    user.level = user.level ?? 1;
+
+    while (user.xp >= xpRequiredForLevel(user.level)) {
+      user.xp -= xpRequiredForLevel(user.level);
+      user.level += 1;
+    }
+
+    await user.save();
+
+    res.send({
+      level: user.level,
+      xp: user.xp,
+      xpToNext: xpRequiredForLevel(user.level),
+    });
+  } catch (err) {
+    console.log("POST /user/xp failed", err);
+    res.status(500).send({ error: "Failed to add XP" });
+  }
+});
+
+/**
+ * POST /api/room/place
+ *
+ * Places an owned item into the user's room and CONSUMES 1 inventory qty.
+ * Returns the placed instance { instanceId, itemKey, x, y, scale }.
+ */
+router.post("/room/place", async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).send({ error: "Not logged in" });
+
+    let { itemKey, x, y, scale } = req.body;
+    if (!itemKey) return res.status(400).send({ error: "itemKey is required" });
+
+    x = Number(x);
+    y = Number(y);
+    scale = scale === undefined ? 1.0 : Number(scale);
+
+    if ([x, y, scale].some((v) => Number.isNaN(v))) {
+      return res.status(400).send({ error: "x, y, scale must be numbers" });
+    }
+
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    x = clamp(x, 0, 1000);
+    y = clamp(y, 0, 600);
+    scale = clamp(scale, 0.25, 3.0);
+
+    // 1) catalog check
+    const itemDef = await Item.findOne({ key: itemKey });
+    if (!itemDef) return res.status(400).send({ error: "Unknown itemKey" });
+
+    // 2) load/create room
+    let room = await Room.findOne({ userId: req.user._id });
+    if (!room) room = await Room.create({ userId: req.user._id, placedItems: [] });
+
+    // 3) optional: maxOwned === 1 can only be placed once
+    if (itemDef.maxOwned === 1) {
+      const alreadyPlaced = (room.placedItems || []).some((p) => p.itemKey === itemKey);
+      if (alreadyPlaced) return res.status(400).send({ error: "Item can only be placed once" });
+    }
+
+    // 4) CONSUME inventory atomically: only succeeds if qty >= 1
+    const inv = await Inventory.findOneAndUpdate(
+      { userId: req.user._id, itemKey, qty: { $gte: 1 } },
+      { $inc: { qty: -1 } },
+      { new: true }
+    );
+
+    if (!inv) return res.status(400).send({ error: "You do not own this item" });
+
+    // 5) add placed instance
+    const instanceId = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    const placed = { instanceId, itemKey, x, y, scale };
+
+    room.placedItems = room.placedItems || [];
+    room.placedItems.push(placed);
+    await room.save();
+
+    return res.send({ placed, inventoryQty: inv.qty });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send({ error: "Failed to place item" });
+  }
+});
+
+/**
+ * DELETE /api/room/remove/:instanceId
+ *
+ * Removes a placed item instance from the user's room and REFUNDS 1 inventory qty.
+ */
+router.delete("/room/remove/:instanceId", async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).send({ error: "Not logged in" });
+
+    const { instanceId } = req.params;
+    if (!instanceId) return res.status(400).send({ error: "instanceId is required" });
+
+    const room = await Room.findOne({ userId: req.user._id });
+    if (!room) return res.status(404).send({ error: "Room not found" });
+
+    const idx = (room.placedItems || []).findIndex((p) => p.instanceId === instanceId);
+    if (idx < 0) return res.status(404).send({ error: "Placed item not found" });
+
+    const removed = room.placedItems[idx]; // has itemKey
+    room.placedItems.splice(idx, 1);
+    await room.save();
+
+    // refund inventory (upsert row if missing)
+    const inv = await Inventory.findOneAndUpdate(
+      { userId: req.user._id, itemKey: removed.itemKey },
+      { $inc: { qty: 1 } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    return res.send({ removedInstanceId: instanceId, itemKey: removed.itemKey, inventoryQty: inv.qty });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send({ error: "Failed to remove item" });
+  }
+});
+
+/**
+ * PATCH /api/room/item/:instanceId
+ *
+ * Updates x/y/scale for a placed instance in the user's room.
+ */
+router.patch("/room/item/:instanceId", async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).send({ error: "Not logged in" });
+
+    const { instanceId } = req.params;
+    let { x, y, scale } = req.body;
+
+    x = Number(x);
+    y = Number(y);
+    scale = Number(scale);
+
+    if ([x, y, scale].some((v) => Number.isNaN(v))) {
+      return res.status(400).send({ error: "x, y, scale must be numbers" });
+    }
+
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    x = clamp(x, 0, 1000);
+    y = clamp(y, 0, 600);
+    scale = clamp(scale, 0.25, 3.0);
+
+    const room = await Room.findOne({ userId: req.user._id });
+    if (!room) return res.status(404).send({ error: "Room not found" });
+
+    const item = (room.placedItems || []).find((p) => p.instanceId === instanceId);
+    if (!item) return res.status(404).send({ error: "Placed item not found" });
+
+    item.x = x;
+    item.y = y;
+    item.scale = scale;
+
+    await room.save();
+    return res.send(item);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send({ error: "Failed to update placed item" });
+  }
+});
+
 
 // anything else falls to this "not found" case
 router.all("*", (req, res) => {

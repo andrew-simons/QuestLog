@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const UserQuestsSchema = new mongoose.Schema({
-  userId: String,
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
   questKey: Number,
 
   isCompleted: Boolean,

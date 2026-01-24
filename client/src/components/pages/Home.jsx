@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
+import { get, post, patch, del } from "../../utilities";
+
 /**
  * Home.jsx (Canvas Room)
  * - Canvas renderer
@@ -144,6 +146,26 @@ function Home() {
   // Minimal React state (not per-frame)
   const [selectedItemId, setSelectedItemId] = useState(null);
 
+  // Sidebar tab
+  const [panelTab, setPanelTab] = useState("inventory"); // "inventory" | "shop"
+
+  // Data to load from backend
+  const [coins, setCoins] = useState(0);
+  const [catalog, setCatalog] = useState([]); // from GET /api/items
+  const [inventory, setInventory] = useState([]); // from GET /api/inventory
+  const [level, setLevel] = useState(1);
+  const [xp, setXp] = useState(0);
+  const [xpToNext, setXpToNext] = useState(100); // simple for now
+
+  // Fast lookup: itemKey -> item definition
+  const catalogByKey = useMemo(() => {
+    const m = new Map();
+    for (const it of catalog) m.set(it.key, it);
+    return m;
+  }, [catalog]);
+
+  const ownedQty = (itemKey) => inventory.find((r) => r.itemKey === itemKey)?.qty || 0;
+
   // World state refs (fast)
   const keysRef = useRef({ w: false, a: false, s: false, d: false });
 
@@ -215,6 +237,59 @@ function Home() {
     };
   }
 
+  // load room + catalog + inventory when Home
+  useEffect(() => {
+    async function load() {
+      const me = await get("/api/whoami");
+      if (!me?._id) return; // not logged in
+      setCoins(me.coins ?? 0);
+
+      const [items, inv, room] = await Promise.all([
+        get("/api/items"),
+        get("/api/inventory"),
+        get("/api/room"),
+      ]);
+
+      setCatalog(items || []);
+      setInventory(inv || []);
+
+      // Room -> canvas world
+      worldRef.current.items = (room?.placedItems || []).map((p) => ({
+        id: p.instanceId, // IMPORTANT: use instanceId as your canvas id
+        itemKey: p.itemKey, // we’ll render by looking up imageKey from catalog
+        x: p.x,
+        y: p.y,
+        scale: p.scale ?? 1.0,
+      }));
+
+      if (room?.beaver) {
+        worldRef.current.beaver.x = room.beaver.x ?? worldRef.current.beaver.x;
+        worldRef.current.beaver.y = room.beaver.y ?? worldRef.current.beaver.y;
+        worldRef.current.beaver.dir = room.beaver.dir ?? "down";
+      }
+    }
+
+    load().catch((e) => console.error(e));
+  }, []);
+
+  // loads user xp and level
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        // replace with your get(...) helper if you have one
+        const res = await fetch("/api/user/stats");
+        if (!res.ok) return;
+        const data = await res.json(); // { level, xp, xpToNext }
+        setLevel(data.level ?? 1);
+        setXp(data.xp ?? 0);
+        setXpToNext(data.xpToNext ?? 100);
+      } catch (e) {
+        console.log("Failed to load stats", e);
+      }
+    }
+    loadStats();
+  }, []);
+
   // Keyboard listeners
   useEffect(() => {
     const down = (e) => {
@@ -267,7 +342,14 @@ function Home() {
       const drawOrder = [...items].sort((a, b) => a.y - b.y);
       for (let i = drawOrder.length - 1; i >= 0; i--) {
         const item = drawOrder[i];
-        const img = imgs[item.imgKey];
+        let img = null;
+        if (item.imgKey) img = imgs[item.imgKey];
+        else {
+          const def = catalogByKey.get(item.itemKey);
+          if (def) img = imgs[def.imageKey];
+        }
+        if (!img) continue;
+
         if (!img) continue;
         if (pointInItem(p.x, p.y, item, img)) {
           dragRef.current.draggingId = item.id;
@@ -297,12 +379,20 @@ function Home() {
       item.y = clamp(p.y - dragRef.current.grabDy, 0, ROOM_H);
     };
 
-    const onUp = (e) => {
-      if (dragRef.current.draggingId) {
-        // TODO: persist to backend here (PATCH)
-        // Example: patch(`/api/room/item/${draggingId}`, {x,y,scale})
-      }
+    const onUp = async () => {
+      const id = dragRef.current.draggingId;
       dragRef.current.draggingId = null;
+
+      if (!id) return;
+
+      const item = worldRef.current.items.find((it) => it.id === id);
+      if (!item) return;
+
+      await patch(`/api/room/item/${id}`, {
+        x: item.x,
+        y: item.y,
+        scale: item.scale,
+      });
     };
 
     const onWheel = (e) => {
@@ -332,7 +422,85 @@ function Home() {
       canvas.removeEventListener("pointercancel", onUp);
       canvas.removeEventListener("wheel", onWheel);
     };
-  }, [assetsRef, selectedItemId]);
+  }, [assetsRef, selectedItemId, catalogByKey]);
+
+  // allow buy + place + persist drag
+  async function buyItem(itemKey) {
+    const resp = await post("/api/shop/buy", { itemKey });
+    if (resp?.error) return console.log(resp.error);
+
+    setCoins(resp.coins);
+
+    setInventory((prev) => {
+      const copy = [...prev];
+      const idx = copy.findIndex((r) => r.itemKey === itemKey);
+      if (idx >= 0) copy[idx] = { ...copy[idx], qty: resp.qty };
+      else copy.push({ itemKey, qty: resp.qty });
+      return copy;
+    });
+  }
+
+  async function placeItem(itemKey) {
+    const def = catalogByKey.get(itemKey);
+    if (!def) return;
+
+    // prevent placing if you don't have any left "in hand"
+    const qty = ownedQty(itemKey);
+    if (qty <= 0) return;
+
+    // prevent placing duplicates for maxOwned=1 items
+    const alreadyPlaced = worldRef.current.items.some((it) => it.itemKey === itemKey);
+    if (def.maxOwned === 1 && alreadyPlaced) return;
+
+    const x = 500;
+    const y = 520;
+    const scale = def.defaultScale ?? 1.0;
+
+    const resp = await post("/api/room/place", { itemKey, x, y, scale });
+    if (resp?.error) return console.log(resp.error);
+
+    const placed = resp.placed;
+
+    // update inventory qty locally (server is source of truth)
+    setInventory((prev) => {
+      const next = [...prev];
+      const idx = next.findIndex((r) => r.itemKey === itemKey);
+      if (idx >= 0) next[idx] = { ...next[idx], qty: resp.inventoryQty };
+      return next;
+    });
+
+    // add placed instance to world
+    worldRef.current.items.push({
+      id: placed.instanceId,
+      itemKey: placed.itemKey,
+      x: placed.x,
+      y: placed.y,
+      scale: placed.scale ?? scale,
+    });
+  }
+
+  // remove item function
+  async function removeSelected() {
+    if (!selectedItemId) return;
+
+    const resp = await del(`/api/room/remove/${selectedItemId}`);
+    if (resp?.error) return console.log(resp.error);
+
+    const { itemKey, inventoryQty } = resp;
+
+    // remove from world
+    worldRef.current.items = worldRef.current.items.filter((it) => it.id !== selectedItemId);
+    setSelectedItemId(null);
+
+    // refund inventory qty locally
+    setInventory((prev) => {
+      const next = [...prev];
+      const idx = next.findIndex((r) => r.itemKey === itemKey);
+      if (idx >= 0) next[idx] = { ...next[idx], qty: inventoryQty };
+      else next.push({ itemKey, qty: inventoryQty });
+      return next;
+    });
+  }
 
   // Game loop (update + render)
   useEffect(() => {
@@ -440,7 +608,12 @@ function Home() {
       for (const d of drawables) {
         if (d.type === "item") {
           const it = d.it;
-          const img = imgs[it.imgKey];
+          let img = null;
+          if (it.imgKey) img = imgs[it.imgKey];
+          else {
+            const def = catalogByKey.get(it.itemKey);
+            if (def) img = imgs[def.imageKey];
+          }
           if (!img) continue;
 
           const { x, y } = worldToScreen(it.x, it.y);
@@ -478,7 +651,7 @@ function Home() {
 
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [assetsReady, dpr, selectedItemId, assetsRef]);
+  }, [assetsReady, dpr, selectedItemId, assetsRef, catalogByKey]);
 
   // Optional: load room state from backend
   // useEffect(() => { get("/api/room").then(set into worldRef.current) }, [])
@@ -496,37 +669,154 @@ function Home() {
       </div>
 
       {/* Right: Simple UI / Inventory (MVP) */}
-      <div style={{ width: 280, borderLeft: "1px solid", padding: 12 }}>
-        <h3 style={{ marginTop: 0 }}>Inventory</h3>
-        <p style={{ margin: 0, fontSize: 13, opacity: 0.8 }}>
-          Drag items in the room. Scroll to scale selected item.
-        </p>
+      <div style={{ width: 280, borderLeft: "1px solid #ddd", padding: 12 }}>
+        <div style={{ marginBottom: 12 }}>
+          <h3 style={{ marginTop: 0, marginBottom: 8 }}>Andrew’s Beaver</h3>
+
+          <div style={{ fontSize: 14, marginBottom: 8 }}>
+            <div>
+              <b>Level:</b> {level}
+            </div>
+            <div>
+              <b>XP:</b> {xp} / {xpToNext}
+            </div>
+          </div>
+
+          <div style={{ height: 10, background: "#eee", borderRadius: 999, overflow: "hidden" }}>
+            <div
+              style={{
+                height: "100%",
+                width: `${Math.floor((xp / xpToNext) * 100)}%`,
+                background: "#999",
+              }}
+            />
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 8,
+          }}
+        >
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => setPanelTab("inventory")} disabled={panelTab === "inventory"}>
+              Inventory
+            </button>
+            <button onClick={() => setPanelTab("shop")} disabled={panelTab === "shop"}>
+              Shop
+            </button>
+          </div>
+
+          <div style={{ fontSize: 13 }}>
+            <b>{coins}</b> coins
+          </div>
+        </div>
 
         <div style={{ marginTop: 12, fontSize: 13 }}>
-          <div>
-            <b>Selected:</b> {selectedItemId || "None"}
-          </div>
-          <div style={{ marginTop: 8 }}>
-            <button
-              onClick={() => {
-                const items = worldRef.current.items;
-                const alreadyHasChair = items.some((it) => it.imgKey === "chair");
-                if (alreadyHasChair) return;
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8,
+            }}
+          >
+            <div>
+              <b>Selected:</b> {selectedItemId || "None"}
+            </div>
 
-                items.push({
-                  id: `i${Math.random().toString(16).slice(2)}`,
-                  imgKey: "chair",
-                  x: 500,
-                  y: 520,
-                  scale: 0.7,
-                });
+            <button
+              disabled={!selectedItemId}
+              onClick={removeSelected}
+              style={{
+                padding: "6px 10px",
+                border: "1px solid #ddd",
+                borderRadius: 8,
+                background: selectedItemId ? "#fff" : "#f5f5f5",
+                cursor: selectedItemId ? "pointer" : "not-allowed",
+                fontSize: 12,
               }}
+              title={selectedItemId ? "Remove selected item from room" : "Select an item to remove"}
             >
-              Add Chair
+              Remove
             </button>
           </div>
         </div>
+
+        <div style={{ marginTop: 12 }}>
+          {panelTab === "inventory" ? (
+            <InventoryPanel inventory={inventory} catalogByKey={catalogByKey} onPlace={placeItem} />
+          ) : (
+            <ShopPanel catalog={catalog} coins={coins} ownedQty={ownedQty} onBuy={buyItem} />
+          )}
+        </div>
       </div>
+    </div>
+  );
+}
+
+function InventoryPanel({ inventory, catalogByKey, onPlace }) {
+  if (!inventory.length) return <div style={{ opacity: 0.8 }}>No items owned yet.</div>;
+
+  return (
+    <div>
+      {inventory.map((row) => {
+        const def = catalogByKey.get(row.itemKey);
+        return (
+          <div
+            key={row.itemKey}
+            style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}
+          >
+            <div style={{ flex: 1 }}>
+              <div>
+                <b>{def?.name ?? row.itemKey}</b>
+              </div>
+              <div style={{ fontSize: 12, opacity: 0.75 }}>qty: {row.qty}</div>
+            </div>
+            <button disabled={row.qty <= 0} onClick={() => onPlace(row.itemKey)}>
+              Place
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ShopPanel({ catalog, coins, ownedQty, onBuy }) {
+  if (!catalog.length) return <div style={{ opacity: 0.8 }}>Loading shop...</div>;
+
+  return (
+    <div>
+      {catalog.map((it) => {
+        const owned = ownedQty(it.key);
+        const maxed = owned >= (it.maxOwned ?? 1);
+        const canAfford = coins >= (it.priceCoins ?? 0);
+
+        return (
+          <div
+            key={it.key}
+            style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}
+          >
+            <div style={{ flex: 1 }}>
+              <div>
+                <b>{it.name}</b>
+              </div>
+              <div style={{ fontSize: 12, opacity: 0.75 }}>
+                {it.priceCoins} coins · owned {owned}/{it.maxOwned ?? 1}
+              </div>
+            </div>
+
+            <button disabled={maxed || !canAfford} onClick={() => onBuy(it.key)}>
+              Buy
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }
