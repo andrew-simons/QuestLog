@@ -18,6 +18,10 @@ const rarityRank = (rarity) => {
   return order[String(rarity).toLowerCase()] ?? 999;
 };
 
+const MAX_TITLE = 30;
+const MAX_DESC = 100;
+const MAX_TAGS = 3;
+
 const Quests = () => {
   const { userId } = useContext(UserContext);
 
@@ -264,14 +268,17 @@ const Quests = () => {
 
     setCreating(true);
     try {
-      const tags = newTags
+      const rawTags = newTags
         .split(",")
         .map((t) => t.trim().toLowerCase())
         .filter(Boolean);
 
+      const title = String(newTitle).slice(0, MAX_TITLE);
+      const tags = Array.from(new Set(rawTags)).slice(0, MAX_TAGS); // unique + max 3
+      const description = String(newDesc).slice(0, MAX_DESC); // safety clamp
       const created = await post("/api/customquests", {
-        title: newTitle,
-        description: newDesc,
+        title,
+        description,
         tags,
         visibility: newVis,
       });
@@ -304,7 +311,7 @@ const Quests = () => {
 
       <div className="questsGrid">
         {/* LEFT */}
-        <section className="panel">
+        <section className="panel tornShape">
           <div className="panelHeader">
             <div>
               <h2 className="panelTitle">Today’s Quests</h2>
@@ -344,7 +351,7 @@ const Quests = () => {
         </section>
 
         {/* RIGHT */}
-        <section className="panel">
+        <section className="panel tornShape">
           <div className="panelHeader">
             <div>
               <h2 className="panelTitle">Custom Quests</h2>
@@ -423,37 +430,46 @@ const Quests = () => {
                   const tags = (cq.tags || []).slice(0, 4);
 
                   return (
-                    <div key={cq._id} className={`customCard ${done ? "done" : ""}`}>
-                      <div className="customTop">
-                        <div className="customTopLeft">
-                          <h3 className="customTitle">{cq.title}</h3>
-                          <div className="tagRow">
-                            <span className={`pill ${vis}`}>{vis}</span>
-                            {tags.map((t) => (
-                              <span key={t} className="tagPill">
-                                {t}
-                              </span>
-                            ))}
-                            {(cq.tags || []).length > 4 && (
-                              <span className="tagMore">+{cq.tags.length - 4}</span>
-                            )}
+                    <div key={cq._id} className={`customCard tornCard ${done ? "done" : ""}`}>
+                      {/* SVG outline layer (required for torn-outline.svg) */}
+                      <span className="tornOutline" />
+
+                      {/* IMPORTANT: wrap card content in tornContent so padding + safe-zone applies */}
+                      <div className="tornContent">
+                        <div style={{ minWidth: 0, flex: "1 1 auto" }}>
+                          <div className="customTop">
+                            <div className="customTopLeft" style={{ minWidth: 0 }}>
+                              <h3 className="customTitle">{cq.title}</h3>
+                              <div className="tagRow">
+                                <span className={`pill ${vis}`}>{vis}</span>
+                                {tags.map((t) => (
+                                  <span key={t} className="tagPill">
+                                    {t}
+                                  </span>
+                                ))}
+                                {(cq.tags || []).length > 4 && (
+                                  <span className="tagMore">+{cq.tags.length - 4}</span>
+                                )}
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => handleToggleCustomQuest(cq._id, !done)}
+                              disabled={savingKey === String(cq._id)}
+                              className={done ? "ghostBtn" : "primaryBtn"}
+                              style={{ flex: "0 0 auto" }}
+                            >
+                              {savingKey === String(cq._id)
+                                ? "Saving…"
+                                : done
+                                  ? "Completed"
+                                  : "Mark Complete"}
+                            </button>
                           </div>
+
+                          <p className="customDesc">{cq.description}</p>
                         </div>
-
-                        <button
-                          onClick={() => handleToggleCustomQuest(cq._id, !done)}
-                          disabled={savingKey === String(cq._id)}
-                          className={done ? "ghostBtn" : "primaryBtn"}
-                        >
-                          {savingKey === String(cq._id)
-                            ? "Saving…"
-                            : done
-                              ? "Completed"
-                              : "Mark Complete"}
-                        </button>
                       </div>
-
-                      <p className="customDesc">{cq.description}</p>
                     </div>
                   );
                 })}
@@ -476,20 +492,65 @@ const Quests = () => {
 
             <form onSubmit={handleCreateCustomQuest} className="modalBody">
               <label className="field">
-                <span>Title</span>
-                <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required />
+                <span>
+                  Title{" "}
+                  <span style={{ opacity: 0.7 }}>
+                    ({newTitle.length}/{MAX_TITLE})
+                  </span>
+                </span>
+                <input
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value.slice(0, MAX_TITLE))}
+                  required
+                  maxLength={MAX_TITLE}
+                />
               </label>
 
               <label className="field">
-                <span>Description</span>
-                <textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} required />
+                <span>
+                  Description{" "}
+                  <span style={{ opacity: 0.7 }}>
+                    ({newDesc.length}/{MAX_DESC})
+                  </span>
+                </span>
+                <textarea
+                  value={newDesc}
+                  onChange={(e) => setNewDesc(e.target.value.slice(0, MAX_DESC))}
+                  required
+                  maxLength={MAX_DESC}
+                />
               </label>
 
               <label className="field">
-                <span>Tags (comma-separated)</span>
+                <span>
+                  Tags (comma-separated){" "}
+                  <span style={{ opacity: 0.7 }}>
+                    (
+                    {
+                      Array.from(
+                        new Set(
+                          newTags
+                            .split(",")
+                            .map((t) => t.trim().toLowerCase())
+                            .filter(Boolean)
+                        )
+                      ).slice(0, MAX_TAGS).length
+                    }
+                    /{MAX_TAGS})
+                  </span>
+                </span>
                 <input
                   value={newTags}
-                  onChange={(e) => setNewTags(e.target.value)}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    const parts = raw
+                      .split(",")
+                      .map((t) => t.trim().toLowerCase())
+                      .filter(Boolean);
+
+                    const clamped = Array.from(new Set(parts)).slice(0, MAX_TAGS);
+                    setNewTags(clamped.join(", "));
+                  }}
                   placeholder="gym, study, social"
                 />
               </label>
@@ -520,6 +581,10 @@ const Quests = () => {
           </div>
         </div>
       )}
+      {/* <div className="debugStack">
+        <img className="dbg" src="/img/ui/torn-mask.svg" />
+        <img className="dbg" src="/img/ui/torn-outline.svg" />
+      </div> */}
     </div>
   );
 };
