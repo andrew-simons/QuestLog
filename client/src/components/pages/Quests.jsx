@@ -42,16 +42,16 @@ const Quests = () => {
   }
 
   const handleToggleQuest = (questKey, isCompleted) => {
-    if (!userId || savingKey) return;
+    if (!userId || savingKey === questKey) return;
     setSavingKey(questKey);
 
-    // update (treat missing as false)
+    const prevWasCompleted = isCompletedFor(questKey);
+
+    // optimistic update
     setUserQuestByKey((prev) => {
       const next = new Map(prev);
       const prevDoc = next.get(questKey) || { questKey };
       next.set(questKey, { ...prevDoc, questKey, isCompleted });
-
-      console.log("BUTTON TOGGLED SUCCESSFULLY");
       return next;
     });
 
@@ -59,22 +59,19 @@ const Quests = () => {
       .then((serverResp) => {
         setUserQuestByKey((prev) => {
           const next = new Map(prev);
-          next.set(questKey, serverResp.userQuest); // ✅ store the actual doc
+          next.set(questKey, serverResp.userQuest);
           return next;
         });
 
-        if (serverResp.awarded) {
-          console.log("Awarded:", serverResp.awarded);
-          // e.g. toast(`+${serverResp.awarded.coins} coins, +${serverResp.awarded.exp} XP!`)
-        }
+        if (serverResp.currentQuests) setCurrentQuests(serverResp.currentQuests);
       })
       .catch((err) => {
         console.log(err);
-        // rollback
+        // rollback to exact previous state
         setUserQuestByKey((prev) => {
           const next = new Map(prev);
           const prevDoc = next.get(questKey) || { questKey };
-          next.set(questKey, { ...prevDoc, questKey, isCompleted: !isCompleted });
+          next.set(questKey, { ...prevDoc, questKey, isCompleted: prevWasCompleted });
           return next;
         });
       })

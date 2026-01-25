@@ -18,7 +18,11 @@ const JournalEntry = require("./models/journalEntry");
 const Room = require("./models/rooms");
 const Inventory = require("./models/inventory");
 
-const { getThreeRandomDistinct, xpRequiredForLevel } = require("./helper");
+const {
+  getThreeRandomDistinct,
+  xpRequiredForLevel,
+  getOneRandomAvailableQuestKey,
+} = require("./helper");
 
 // import authentication library
 const auth = require("./auth");
@@ -185,7 +189,6 @@ router.patch("/userquests", async (req, res) => {
 
     let { questKey, isCompleted } = req.body;
 
-    // ---- Validation ----
     if (questKey === undefined || questKey === null) {
       return res.status(400).send({ error: "questKey is required" });
     }
@@ -198,29 +201,14 @@ router.patch("/userquests", async (req, res) => {
       return res.status(400).send({ error: "questKey must be a number" });
     }
 
-    // ---- Reward maps ----
-    const COINS_BY_RARITY = {
-      common: 10,
-      rare: 25,
-      epic: 60,
-      legendary: 150,
-    };
+    const COINS_BY_RARITY = { common: 10, rare: 25, epic: 60, legendary: 150 };
+    const EXP_BY_RARITY = { common: 10, rare: 25, epic: 60, legendary: 150 };
 
-    // If your Quest model already stores expReward, you can ignore this map
-    const EXP_BY_RARITY = {
-      common: 10,
-      rare: 25,
-      epic: 60,
-      legendary: 150,
-    };
-
-    // ---- Look up the quest to get rarity (and expReward if you store it) ----
-    const quest = await Quest.findOne({ questKey });
+    const quest = await Quest.findOne({ questKey }).lean();
     if (!quest) return res.status(400).send({ error: "Invalid questKey (quest not found)" });
 
-    const rarityRaw = quest.rarity ?? quest.rarityLevel ?? quest.tier; // adjust to your schema
+    const rarityRaw = quest.rarity ?? quest.rarityLevel ?? quest.tier;
     const rarity = String(rarityRaw || "").toLowerCase();
-
     if (!COINS_BY_RARITY[rarity]) {
       return res.status(500).send({ error: `Unknown rarity on quest: ${rarityRaw}` });
     }
@@ -230,57 +218,66 @@ router.patch("/userquests", async (req, res) => {
 
     const filter = { userId: req.user._id, questKey };
 
-    // Fetch current completion state so we only award once
-    const existing = await UserQuest.findOne(filter);
-
+    const existing = await UserQuest.findOne(filter).lean();
     const wasCompleted = !!existing?.isCompleted;
     const isNowCompleting = !wasCompleted && isCompleted === true;
 
-    // ---- Update/Upsert the UserQuest doc ----
-    const update = {
-      $set: {
-        isCompleted,
-        completedAt: isCompleted ? new Date() : null,
+    const doc = await UserQuest.findOneAndUpdate(
+      filter,
+      {
+        $set: { isCompleted, completedAt: isCompleted ? new Date() : null },
+        $setOnInsert: { userId: req.user._id, questKey },
       },
-      $setOnInsert: {
-        userId: req.user._id,
-        questKey,
-      },
-    };
+      { new: true, upsert: true, runValidators: true }
+    ).lean();
 
-    const options = { new: true, upsert: true, runValidators: true };
+    let awarded = null;
+    let currentQuestKeys = null;
+    let currentQuests = null;
 
-    // If you want true atomicity for rewards + completion, use a transaction.
-    // This version works without transactions but still prevents double-awards logically.
-    const doc = await UserQuest.findOneAndUpdate(filter, update, options);
-
-    // ---- Award rewards only on first completion ----
     if (isNowCompleting) {
-      await User.findByIdAndUpdate(
-        req.user._id,
-        {
-          $inc: {
-            coins: coinsAward,
-            xp: expAward,
-          },
-        },
-        { new: false }
-      );
+      const user = await User.findById(req.user._id);
+      if (!user) return res.status(404).send({ error: "User not found" });
+
+      user.coins = (user.coins ?? 0) + coinsAward;
+      user.xp = (user.xp ?? 0) + expAward;
+      user.level = user.level ?? 1;
+
+      while (user.xp >= xpRequiredForLevel(user.level)) {
+        user.xp -= xpRequiredForLevel(user.level);
+        user.level += 1;
+      }
+
+      const current = (user.currentQuestKeys ?? []).map(Number);
+
+      if (current.includes(questKey)) {
+        const replacement = await getOneRandomAvailableQuestKey(user._id, current);
+
+        const nextKeys = current
+          .map((k) => (k === questKey ? replacement : k))
+          .filter((k) => k != null);
+
+        user.currentQuestKeys = nextKeys;
+      }
+
+      await user.save();
+      req.session.user = user.toObject ? user.toObject() : user;
+
+      awarded = { coins: coinsAward, exp: expAward, rarity };
+
+      currentQuestKeys = (user.currentQuestKeys ?? []).map(Number);
+
+      // fetch + keep order same as keys
+      const found = await Quest.find({ questKey: { $in: currentQuestKeys } }).lean();
+      const byKey = new Map(found.map((q) => [Number(q.questKey), q]));
+      currentQuests = currentQuestKeys.map((k) => byKey.get(Number(k))).filter(Boolean);
     }
 
-    // Optionally return rewards info to the frontend
-    return res.send({
-      userQuest: doc,
-      awarded: isNowCompleting ? { coins: coinsAward, exp: expAward, rarity } : null,
-    });
+    return res.send({ userQuest: doc, awarded, currentQuestKeys, currentQuests });
   } catch (err) {
     console.error(err);
-
-    if (err.code === 11000) {
-      return res.status(409).send({ error: "Duplicate quest record" });
-    }
-
-    res.status(500).send({ error: "Failed to update user quest" });
+    if (err.code === 11000) return res.status(409).send({ error: "Duplicate quest record" });
+    return res.status(500).send({ error: "Failed to update user quest" });
   }
 });
 
@@ -597,7 +594,11 @@ router.delete("/room/remove/:instanceId", async (req, res) => {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    return res.send({ removedInstanceId: instanceId, itemKey: removed.itemKey, inventoryQty: inv.qty });
+    return res.send({
+      removedInstanceId: instanceId,
+      itemKey: removed.itemKey,
+      inventoryQty: inv.qty,
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).send({ error: "Failed to remove item" });
@@ -646,7 +647,6 @@ router.patch("/room/item/:instanceId", async (req, res) => {
     return res.status(500).send({ error: "Failed to update placed item" });
   }
 });
-
 
 // anything else falls to this "not found" case
 router.all("*", (req, res) => {

@@ -34,4 +34,25 @@ function xpRequiredForLevel(level) {
   return Math.floor(50 * level ** 1.5);
 }
 
-module.exports = { getThreeRandomDistinct, xpRequiredForLevel };
+// returns ONE questKey not completed + not in excludeKeys
+async function getOneRandomAvailableQuestKey(userId, excludeKeys = []) {
+  // completed quest keys
+  const completed = await UserQuests.find({ userId, isCompleted: true }).select("questKey -_id");
+  const completedKeys = new Set(completed.map((d) => d.questKey));
+
+  // exclude current keys too
+  const exclude = new Set(excludeKeys.map(Number));
+
+  const all = await Quest.find({}).select("questKey -_id");
+  const available = all
+    .map((q) => q.questKey)
+    .filter((k) => !completedKeys.has(k) && !exclude.has(k));
+
+  if (available.length === 0) return null;
+
+  const idx = Math.floor(Math.random() * available.length);
+  return available[idx];
+}
+
+
+module.exports = { getThreeRandomDistinct, xpRequiredForLevel, getOneRandomAvailableQuestKey };
