@@ -1,4 +1,6 @@
 const { OAuth2Client } = require("google-auth-library");
+const { generateUniqueFriendCode } = require("./helper");
+
 const User = require("./models/user");
 const Room = require("./models/rooms");
 const Inventory = require("./models/inventory");
@@ -23,44 +25,49 @@ function verify(token) {
 }
 
 // gets user from DB, or makes a new account AND other DBs if it doesn't exist yet
-function getOrCreateUser(user) {
-  // the "sub" field means "subject", which is a unique identifier for each user
-  return User.findOne({ googleid: user.sub }).then((existingUser) => {
-    if (existingUser) return existingUser;
+async function getOrCreateUser(user) {
+  const existingUser = await User.findOne({ googleid: user.sub });
+  if (existingUser) {
+    // backfill friendCode if older users don't have it
+    if (!existingUser.friendCode) {
+      existingUser.friendCode = await generateUniqueFriendCode();
+      await existingUser.save();
+    }
+    return existingUser;
+  }
 
-    const newUser = new User({
-      name: user.name,
-      googleid: user.sub,
-      createdAt: new Date(), // current date & time
-      xp: 0,
-      level: 1,
-      coins: 0,
-      equipped: {
-        beaverSkinId: "default",
-        hatItemId: "default",
-        roomThemeId: "default",
-      },
-      currentQuestKeys: [1, 2, 3],
-      completedQuestKeys: [],
-    });
-
-    const newRoom = new Room({
-      ownerUserId: newUser.id,
-      layout: { placedItems: [] },
-      updatedAt: new Date(),
-    });
-    newRoom.save();
-
-    newUser.roomId = newRoom._id; // set the room_id to the user obj
-
-    const newInv = new Inventory({
-      userId: newUser._id,
-      itemIds: [],
-    });
-    newInv.save();
-
-    return newUser.save();
+  // create new user with a guaranteed-unique friend code
+  const newUser = new User({
+    name: user.name,
+    googleid: user.sub,
+    createdAt: new Date(),
+    xp: 0,
+    level: 1,
+    coins: 0,
+    equipped: {
+      beaverSkinId: "default",
+      hatItemId: "default",
+      roomThemeId: "default",
+    },
+    friendCode: await generateUniqueFriendCode(),
+    currentQuestKeys: [1, 2, 3],
+    completedQuestKeys: [],
   });
+
+  const newRoom = await Room.create({
+    ownerUserId: newUser._id, // <-- use _id consistently
+    layout: { placedItems: [] },
+    updatedAt: new Date(),
+  });
+
+  newUser.roomId = newRoom._id;
+
+  await Inventory.create({
+    userId: newUser._id,
+    itemIds: [],
+  });
+
+  return await newUser.save();
 }
 
 function login(req, res) {

@@ -21,6 +21,9 @@ const NavBar = () => {
         <Link to="/journal" className="NavBar-link">
           Journal
         </Link>
+        <Link to="/friends" className="NavBar-link">
+          Friends
+        </Link>
         {userId ? (
           <button className="NavBar-link NavBar-login u-inlineBlock" onClick={handleLogout}>
             Sign out

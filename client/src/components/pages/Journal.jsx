@@ -114,7 +114,7 @@ const Journal = () => {
         const tb = jb?.updatedAt ? new Date(jb.updatedAt).getTime() : 0;
         return tb - ta;
       });
-  }, [completedQuests, filterSource, search, sortBy]); // getJournalFor is stable-enough here
+  }, [completedQuests, filterSource, search, sortBy]); 
 
   const stats = useMemo(() => {
     const total = completedQuests.length;
@@ -124,7 +124,7 @@ const Journal = () => {
     const withPhotos = visibleItems.filter((it) => (getJournalFor(it)?.photoUrls || []).length > 0)
       .length;
     return { total, shown, withText, withPhotos };
-  }, [completedQuests.length, visibleItems]); // fine
+  }, [completedQuests.length, visibleItems]); 
 
   return (
     <div className="jrPage">

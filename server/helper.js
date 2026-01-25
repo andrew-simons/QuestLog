@@ -1,6 +1,7 @@
 // Helper Methods
 const Quest = require("./models/quest");
 const UserQuests = require("./models/userQuests");
+const User = require("./models/user");
 
 // takes in a userId string. Outputs three random questKeys that don't include those
 async function getThreeRandomDistinct(user_id) {
@@ -54,5 +55,22 @@ async function getOneRandomAvailableQuestKey(userId, excludeKeys = []) {
   return available[idx];
 }
 
+// (helper)
+function generateFriendCode() {
+  // 6 chars, uppercase
+  return Math.random().toString(36).slice(2, 8).toUpperCase();
+}
+async function generateUniqueFriendCode() {
+  while (true) {
+    const code = generateFriendCode();
+    const exists = await User.exists({ friendCode: code });
+    if (!exists) return code;
+  }
+}
 
-module.exports = { getThreeRandomDistinct, xpRequiredForLevel, getOneRandomAvailableQuestKey };
+module.exports = {
+  getThreeRandomDistinct,
+  xpRequiredForLevel,
+  getOneRandomAvailableQuestKey,
+  generateUniqueFriendCode,
+};

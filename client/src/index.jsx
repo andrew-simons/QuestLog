@@ -8,6 +8,7 @@ import Login from "./components/pages/Login";
 import Home from "./components/pages/Home";
 import Quests from "./components/pages/Quests";
 import Journal from "./components/pages/Journal";
+import Friends from "./components/pages/Friends";
 
 import {
   createBrowserRouter,
@@ -28,6 +29,7 @@ const router = createBrowserRouter(
       <Route path="/home" element={<Home />} />
       <Route path="/quests" element={<Quests />} />
       <Route path="/journal" element={<Journal />} />
+      <Route path="/friends" element={<Friends />} />
     </Route>
   )
 );

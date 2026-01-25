@@ -18,6 +18,7 @@ const JournalEntry = require("./models/journalEntry");
 const Room = require("./models/rooms");
 const Inventory = require("./models/inventory");
 const CustomQuest = require("./models/customQuests");
+const Friendship = require("./models/friendship");
 
 const {
   getThreeRandomDistinct,
@@ -794,6 +795,172 @@ router.get("/customquests", async (req, res) => {
     res.status(500).send({ error: "Failed to load custom quests" });
   }
 });
+
+/*
+Send a friend request
+
+Route: POST /api/friends/request
+Body: { recipientId: string }
+Returns: the created friendship (or existing)
+*/
+router.post("/friends/request", async (req, res) => {
+  if (!req.user) return res.status(401).send({ error: "Not logged in" });
+
+  const { recipientId } = req.body;
+  if (!recipientId) return res.status(400).send({ error: "Missing recipientId" });
+
+  if (String(req.user._id) === String(recipientId)) {
+    return res.status(400).send({ error: "You cannot friend yourself" });
+  }
+
+  try {
+    // Check if relationship already exists in either direction
+    const existing = await Friendship.findOne({
+      $or: [
+        { requester: req.user._id, recipient: recipientId },
+        { requester: recipientId, recipient: req.user._id },
+      ],
+    });
+
+    if (existing) return res.send(existing);
+
+    const friendship = await Friendship.create({
+      requester: req.user._id,
+      recipient: recipientId,
+      status: "pending",
+    });
+
+    res.send(friendship);
+  } catch (err) {
+    res.status(500).send({ error: "Failed to create request" });
+  }
+});
+
+/*
+Accept a friend request
+
+Route: POST /api/friends/accept
+Body: { requesterId: string }
+*/
+router.post("/friends/accept", async (req, res) => {
+  if (!req.user) return res.status(401).send({ error: "Not logged in" });
+
+  const { requesterId } = req.body;
+
+  try {
+    const updated = await Friendship.findOneAndUpdate(
+      { requester: requesterId, recipient: req.user._id, status: "pending" },
+      { status: "accepted" },
+      { new: true }
+    );
+
+    if (!updated) return res.status(404).send({ error: "No pending request found" });
+
+    res.send(updated);
+  } catch (err) {
+    res.status(500).send({ error: "Failed to accept request" });
+  }
+});
+
+// Decline (recipient declines) and cancel (requester cancels) are both just deletes.
+router.post("/friends/decline", async (req, res) => {
+  if (!req.user) return res.status(401).send({ error: "Not logged in" });
+
+  const { requesterId } = req.body;
+
+  await Friendship.deleteOne({
+    requester: requesterId,
+    recipient: req.user._id,
+    status: "pending",
+  });
+
+  res.send({ success: true });
+});
+
+/*
+List accepted friends
+
+Route: GET /api/friends
+Returns: [{_id, name, ...}]
+*/
+router.get("/friends", async (req, res) => {
+  if (!req.user) return res.status(401).send({ error: "Not logged in" });
+
+  const edges = await Friendship.find({
+    status: "accepted",
+    $or: [{ requester: req.user._id }, { recipient: req.user._id }],
+  }).populate("requester recipient", "name friendCode");
+
+  const friends = edges.map((e) => {
+    const requesterIsMe = e.requester._id.equals(req.user._id);
+    return requesterIsMe ? e.recipient : e.requester;
+  });
+
+  res.send(friends);
+});
+
+/*
+List incoming pending requests
+
+Route: GET /api/friends/requests
+*/
+router.get("/friends/requests", async (req, res) => {
+  if (!req.user) return res.status(401).send({ error: "Not logged in" });
+
+  const incoming = await Friendship.find({
+    status: "pending",
+    recipient: req.user._id,
+  }).populate("requester", "name friendCode");
+
+  res.send(incoming);
+});
+
+/**
+ * POST /api/friends/requestByCode
+ * Body: { friendCode: string }
+ * Creates a pending friend request by friend code.
+ */
+router.post("/friends/requestByCode", async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).send({ error: "Not logged in" });
+
+    const { friendCode } = req.body;
+    if (!friendCode) return res.status(400).send({ error: "Missing friendCode" });
+
+    const code = String(friendCode).trim().toUpperCase();
+
+    // Find the recipient by friendCode
+    const recipient = await User.findOne({ friendCode: code }).lean();
+    if (!recipient) return res.status(404).send({ error: "No user with that friend code" });
+
+    // Cannot friend yourself
+    if (String(recipient._id) === String(req.user._id)) {
+      return res.status(400).send({ error: "You cannot friend yourself" });
+    }
+
+    // Check if relationship already exists in either direction
+    const existing = await Friendship.findOne({
+      $or: [
+        { requester: req.user._id, recipient: recipient._id },
+        { requester: recipient._id, recipient: req.user._id },
+      ],
+    });
+
+    if (existing) return res.send(existing);
+
+    const friendship = await Friendship.create({
+      requester: req.user._id,
+      recipient: recipient._id,
+      status: "pending",
+    });
+
+    res.send(friendship);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ error: "Failed to create request" });
+  }
+});
+
 
 // anything else falls to this "not found" case
 router.all("*", (req, res) => {

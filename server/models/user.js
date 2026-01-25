@@ -15,6 +15,8 @@ const UserSchema = new mongoose.Schema({
     roomThemeId: String,
   },
 
+  friendCode: { type: String, unique: true, index: true },
+
   currentQuestKeys: Array,
   completedQuestKeys: Array,
   roomId: String,
