@@ -1,0 +1,30 @@
+:root {
+  --ink: #1e1e1e;
+  --paper: #f6f1e7;
+  --sage: #b9d76a;     /* top bar green */
+  --tan: #e5c08a;      /* quest paper */
+  --tan2: #e2b778;
+  --stroke: 3px;
+  --radius: 14px;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* optional: paper texture */
+.sketchApp {
+  min-height: 100vh;
+  position: relative;
+}
+
+.sketchApp::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: url("/img/ui/paper-texture.png");
+  opacity: 0.14;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}

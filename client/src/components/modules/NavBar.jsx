@@ -8,34 +8,46 @@ import { UserContext } from "../App";
 
 const NavBar = () => {
   const { userId, handleLogin, handleLogout } = useContext(UserContext);
+
   return (
-    <nav className="NavBar-container">
-      <div className="NavBar-title u-inlineBlock">QuestLog</div>
-      <div className="NavBar-linkContainer u-inlineBlock">
-        <Link to="/home" className="NavBar-link">
+    <nav className="NavBar-container sketchNav">
+      <div className="sketchNav-left">
+        <div className="NavBar-title sketchBrand">QUESTLOG</div>
+      </div>
+
+      <div className="NavBar-linkContainer sketchTabs">
+        <Link to="/home" className="NavBar-link sketchTab">
           Home
         </Link>
-        <Link to="/quests" className="NavBar-link">
+        <Link to="/quests" className="NavBar-link sketchTab">
           Quests
         </Link>
-        <Link to="/journal" className="NavBar-link">
+        <Link to="/journal" className="NavBar-link sketchTab">
           Journal
         </Link>
-        <Link to="/friends" className="NavBar-link">
+        <Link to="/friends" className="NavBar-link sketchTab">
           Friends
         </Link>
-        {userId ? (
-          <button className="NavBar-link NavBar-login u-inlineBlock" onClick={handleLogout}>
-            Sign out
-          </button>
-        ) : (
-          <GoogleLogin
-            text="signin_with"
-            onSuccess={handleLogin}
-            onFailure={(err) => console.log(err)}
-            containerProps={{ className: "NavBar-link NavBar-login u-inlineBlock" }}
-          />
-        )}
+
+        <div className="sketchNav-right">
+          {userId ? (
+            <button
+              className="NavBar-link NavBar-login sketchTab sketchAuthBtn"
+              onClick={handleLogout}
+            >
+              Sign out
+            </button>
+          ) : (
+            <div className="sketchGoogleWrap">
+              <GoogleLogin
+                text="signin_with"
+                onSuccess={handleLogin}
+                onFailure={(err) => console.log(err)}
+                containerProps={{ className: "NavBar-link NavBar-login" }}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </nav>
   );

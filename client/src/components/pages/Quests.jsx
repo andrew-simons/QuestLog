@@ -407,8 +407,8 @@ const Quests = () => {
                   className="ghostBtn"
                   onClick={() => {
                     setCustomSearch("");
-                    setCustomTag("all");
                     setCustomSort("new");
+                    setCustomVisFilter("all");
                     setCustomShowCompleted(true);
                   }}
                 >

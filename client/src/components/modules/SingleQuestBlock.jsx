@@ -7,9 +7,14 @@ const SingleQuestBlock = (props) => {
   return (
     <div className={`questRow ${isCompleted ? "done" : ""}`}>
       <div className="questMain">
-        <h3 className="questTitle">{quest.title}</h3>
+        <div className="questTopLine">
+          <span className={`rarityTag rarity-${String(quest.rarity || "").toLowerCase()}`}>
+            {String(quest.rarity || "common").toLowerCase()}
+          </span>
+          <h3 className="questTitle">{quest.title}</h3>
+        </div>
+
         <div className="questMeta">
-          <span className="metaChip">Rarity: {quest.rarity}</span>
           <span className="metaChip">XP: {quest.xpReward}</span>
         </div>
       </div>

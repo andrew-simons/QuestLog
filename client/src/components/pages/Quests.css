@@ -1,26 +1,46 @@
+/* -----------------------------
+   QuestLog "Sketch" Quests Page
+   ----------------------------- */
+
+/* If you already defined these in a global theme file, remove this block. */
+:root {
+  --ink: #1e1e1e;
+  --paper: #f6f1e7;
+  --sage: #b9d76a;
+  --tan: #e5c08a;
+  --tan2: #e2b778;
+  --stroke: 3px;
+  --radius: 14px;
+}
+
+/* Page container */
 .questsPage {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 24px 16px 40px;
+  padding: 18px 16px 40px;
 }
 
+/* Header */
 .pageHeader {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  margin-bottom: 18px;
+  margin: 8px 0 16px;
 }
 
 .pageTitle {
   margin: 0;
-  font-size: 28px;
+  font-size: 42px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .pageSub {
   margin: 6px 0 0;
-  opacity: 0.75;
+  opacity: 0.8;
 }
 
+/* Two-column layout */
 .questsGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -33,30 +53,56 @@
   }
 }
 
+/* -----------------------------
+   Panels (big drawn containers)
+   ----------------------------- */
 .panel {
-  border: 1px solid rgba(0,0,0,0.10);
-  border-radius: 14px;
+  border: var(--stroke) solid var(--ink);
+  border-radius: 16px;
   overflow: hidden;
-  background: white;
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.12);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 190px); /* leaves room for navbar + page header */
+  height: 520px; /* fallback / default */
+  min-height: 520px;
+}
+
+/* subtle paper texture overlay inside each panel (optional) */
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.1;
+  background-image: url("/img/ui/paper-texture.png");
+  background-size: 420px;
+  mix-blend-mode: multiply;
 }
 
 .panelHeader {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
   padding: 14px 14px;
-  border-bottom: 1px solid rgba(0,0,0,0.07);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.18);
+  background: rgba(255, 255, 255, 0.2);
+  flex: 0 0 auto;
 }
 
 .panelTitle {
   margin: 0;
   font-size: 18px;
+  letter-spacing: 0.3px;
 }
 
 .panelSub {
   margin: 4px 0 0;
-  opacity: 0.7;
+  opacity: 0.75;
   font-size: 13px;
 }
 
@@ -64,42 +110,62 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .panelBody {
+  position: relative;
   padding: 12px 14px 14px;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0; /* IMPORTANT: allows flex child to actually scroll */
 }
 
+/* -----------------------------
+   Inputs / selects (sketchy)
+   ----------------------------- */
 .inlineField {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  opacity: 0.9;
+  opacity: 0.95;
 }
 
 .inlineField select {
   border-radius: 10px;
-  border: 1px solid rgba(0,0,0,0.14);
+  border: 2px solid var(--ink);
   padding: 6px 10px;
-  background: white;
+  background: rgba(255, 255, 255, 0.35);
+  color: var(--ink);
 }
 
+/* Filter bar */
 .filterBar {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   padding: 12px 14px;
-  border-bottom: 1px solid rgba(0,0,0,0.07);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.18);
+  background: rgba(255, 255, 255, 0.12);
+  flex: 0 0 auto;
 }
 
 .searchInput {
   flex: 1;
   min-width: 220px;
   border-radius: 10px;
-  border: 1px solid rgba(0,0,0,0.14);
+  border: 2px solid var(--ink);
   padding: 8px 10px;
   outline: none;
+  background: rgba(255, 255, 255, 0.35);
+  color: var(--ink);
+}
+
+.searchInput:focus {
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
 }
 
 .checkField {
@@ -107,15 +173,22 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  opacity: 0.9;
+  opacity: 0.95;
 }
 
+/* -----------------------------
+   Empty state
+   ----------------------------- */
 .emptyState {
   padding: 18px 8px;
   text-align: center;
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
+/* -----------------------------
+   Custom quests (right panel)
+   Make these feel like paper cards
+   ----------------------------- */
 .customList {
   display: flex;
   flex-direction: column;
@@ -123,10 +196,16 @@
 }
 
 .customCard {
-  border: 1px solid rgba(0,0,0,0.10);
+  border: 2px solid var(--ink);
   border-radius: 14px;
   padding: 12px 12px;
-  background: rgba(0,0,0,0.02);
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
+  transform: rotate(0.1deg);
+}
+
+.customCard:nth-child(2n) {
+  transform: rotate(-0.12deg);
 }
 
 .customCard.done {
@@ -147,10 +226,11 @@
 
 .customDesc {
   margin: 10px 0 0;
-  opacity: 0.85;
+  opacity: 0.9;
   line-height: 1.35;
 }
 
+/* Tags */
 .tagRow {
   display: flex;
   flex-wrap: wrap;
@@ -162,8 +242,8 @@
   border-radius: 999px;
   padding: 4px 8px;
   font-size: 12px;
-  border: 1px solid rgba(0,0,0,0.12);
-  background: white;
+  border: 2px solid var(--ink);
+  background: rgba(255, 255, 255, 0.35);
   text-transform: lowercase;
 }
 
@@ -171,74 +251,143 @@
   border-radius: 999px;
   padding: 4px 8px;
   font-size: 12px;
-  border: 1px solid rgba(0,0,0,0.10);
-  background: rgba(0,0,0,0.03);
+  border: 2px solid rgba(0, 0, 0, 0.35);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .tagMore {
   font-size: 12px;
-  opacity: 0.7;
+  opacity: 0.75;
   padding: 4px 6px;
 }
 
-/* Built-in quest rows (if you use the nicer SingleQuestBlock) */
+/* -----------------------------
+   Built-in quest rows (left panel)
+   Turn these into "torn paper" vibe
+   ----------------------------- */
 .questRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 12px;
-  border: 1px solid rgba(0,0,0,0.10);
+  padding: 14px 14px;
+  margin-bottom: 12px;
+
+  /* base border, later you can swap to torn SVG background */
+  border: var(--stroke) solid var(--ink);
   border-radius: 14px;
-  background: rgba(0,0,0,0.02);
-  margin-bottom: 10px;
+
+  background: linear-gradient(0deg, var(--tan2), var(--tan));
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.14);
+  transform: rotate(-0.15deg);
+  position: relative;
+}
+
+.questRow:nth-child(2n) {
+  transform: rotate(0.12deg);
 }
 
 .questRow.done {
-  opacity: 0.75;
+  opacity: 0.78;
 }
 
+/* optional scribble noise */
+.questRow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.1;
+  background-image: url("/img/ui/scribble-noise.png");
+  background-size: 360px;
+  mix-blend-mode: multiply;
+}
+
+/* Title + rarity line */
 .questTitle {
   margin: 0;
-  font-size: 15px;
+  font-size: 18px;
+  letter-spacing: 0.2px;
 }
 
+.questTopLine {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.rarityTag {
+  font-weight: 900;
+  font-size: 12px;
+  text-transform: lowercase;
+  padding: 3px 8px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* You can tweak these colors later */
+.rarity-common {
+  color: #2b7a2b;
+}
+.rarity-uncommon {
+  color: #2b7a2b;
+}
+.rarity-rare {
+  color: #1f5fbf;
+}
+.rarity-epic {
+  color: #7a2bbd;
+}
+.rarity-legendary {
+  color: #a05a00;
+}
+
+/* Meta chips */
 .questMeta {
   display: flex;
   gap: 8px;
-  margin-top: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
 }
 
 .metaChip {
   font-size: 12px;
-  border: 1px solid rgba(0,0,0,0.10);
+  border: 2px solid rgba(0, 0, 0, 0.45);
   border-radius: 999px;
   padding: 4px 8px;
-  background: white;
-  opacity: 0.9;
+  background: rgba(255, 255, 255, 0.28);
+  opacity: 0.95;
 }
 
+/* Checkbox pill */
 .checkPill {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid rgba(0,0,0,0.12);
+  border: 2px solid var(--ink);
   border-radius: 999px;
   padding: 8px 10px;
-  background: white;
+  background: rgba(255, 255, 255, 0.35);
   font-size: 13px;
   user-select: none;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
 }
 
 .checkPill input {
+  width: 18px;
+  height: 18px;
   transform: translateY(1px);
 }
 
-/* Modal polish */
+/* -----------------------------
+   Modal: keep mostly modern but ink it
+   ----------------------------- */
 .modalBackdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -248,10 +397,11 @@
 
 .modal {
   width: min(520px, 100%);
-  background: white;
+  background: rgba(255, 255, 255, 0.92);
   border-radius: 16px;
-  border: 1px solid rgba(0,0,0,0.12);
+  border: var(--stroke) solid var(--ink);
   overflow: hidden;
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.16);
 }
 
 .modalHeader {
@@ -259,7 +409,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 14px;
-  border-bottom: 1px solid rgba(0,0,0,0.07);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.18);
 }
 
 .modalBody {
@@ -277,8 +427,9 @@
 .field textarea,
 .field select {
   border-radius: 10px;
-  border: 1px solid rgba(0,0,0,0.14);
+  border: 2px solid var(--ink);
   padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .field textarea {
@@ -294,9 +445,15 @@
 }
 
 .iconBtn {
-  border: none;
-  background: transparent;
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.15);
   cursor: pointer;
   font-size: 18px;
-  opacity: 0.7;
+  opacity: 0.8;
+  border-radius: 10px;
+  padding: 4px 8px;
+}
+
+.iconBtn:hover {
+  border-color: rgba(0, 0, 0, 0.3);
 }

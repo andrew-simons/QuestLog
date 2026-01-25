@@ -4,6 +4,7 @@ import { Outlet, useNavigate } from "react-router-dom";
 import jwt_decode from "jwt-decode";
 
 import "../utilities.css";
+import "./SketchTheme.css";
 
 import { socket } from "../client-socket";
 
@@ -63,12 +64,12 @@ const App = () => {
     );
   } else {
     return (
-      <>
+      <div className="sketchApp">
         <UserContext.Provider value={authContextValue}>
           <NavBar />
           <Outlet />
         </UserContext.Provider>
-      </>
+      </div>
     );
   }
 };
