@@ -1,0 +1,216 @@
+.questsPage {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.pageTitle {
+  margin: 0 0 16px;
+}
+
+.questsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.panel {
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.panelHeader {
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: 18px;
+}
+
+.panelSub {
+  margin: 4px 0 0;
+  opacity: 0.7;
+  font-size: 13px;
+}
+
+.panelActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.inlineField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.panelBody {
+  padding: 16px;
+}
+
+.primaryBtn {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(0, 0, 0, 0.92);
+  color: white;
+  cursor: pointer;
+}
+
+.ghostBtn {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: transparent;
+  cursor: pointer;
+}
+
+.primaryBtn:disabled,
+.ghostBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.customList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.customCard {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.customTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.customTitle {
+  margin: 0;
+  font-size: 16px;
+}
+
+.customDesc {
+  margin: 8px 0 0;
+  opacity: 0.85;
+}
+
+.customActions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pill {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  opacity: 0.85;
+}
+
+.emptyState {
+  padding: 16px;
+  border: 1px dashed rgba(0, 0, 0, 0.2);
+  border-radius: 14px;
+  text-align: center;
+  opacity: 0.9;
+}
+
+/* Modal */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal {
+  width: 100%;
+  max-width: 520px;
+  background: white;
+  border-radius: 18px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.25);
+}
+
+.modalHeader {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.iconBtn {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.modalBody {
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field > span {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.field textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .questsGrid {
+    grid-template-columns: 1fr;
+  }
+}

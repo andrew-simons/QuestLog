@@ -17,6 +17,7 @@ const UserQuest = require("./models/userQuests");
 const JournalEntry = require("./models/journalEntry");
 const Room = require("./models/rooms");
 const Inventory = require("./models/inventory");
+const CustomQuest = require("./models/customQuests");
 
 const {
   getThreeRandomDistinct,
@@ -187,36 +188,62 @@ router.patch("/userquests", async (req, res) => {
   try {
     if (!req.user) return res.status(401).send({ error: "Not logged in" });
 
-    let { questKey, isCompleted } = req.body;
+    let { source, questKey, customQuestId, isCompleted } = req.body;
 
-    if (questKey === undefined || questKey === null) {
-      return res.status(400).send({ error: "questKey is required" });
+    if (source !== "builtin" && source !== "custom") {
+      return res.status(400).send({ error: "source must be 'builtin' or 'custom'" });
     }
     if (typeof isCompleted !== "boolean") {
       return res.status(400).send({ error: "isCompleted must be a boolean" });
     }
 
-    questKey = Number(questKey);
-    if (Number.isNaN(questKey)) {
-      return res.status(400).send({ error: "questKey must be a number" });
+    // Identify the quest + set rewards (SERVER SIDE)
+    let coinsAward = 0;
+    let expAward = 0;
+    let filter = { userId: req.user._id, source };
+
+    if (source === "builtin") {
+      questKey = Number(questKey);
+      if (Number.isNaN(questKey))
+        return res.status(400).send({ error: "questKey must be a number" });
+
+      const COINS_BY_RARITY = { common: 10, rare: 25, epic: 60, legendary: 150 };
+      const EXP_BY_RARITY = { common: 10, rare: 25, epic: 60, legendary: 150 };
+
+      const quest = await Quest.findOne({ questKey }).lean();
+      if (!quest) return res.status(400).send({ error: "Invalid questKey (quest not found)" });
+
+      const rarityRaw = quest.rarity ?? quest.rarityLevel ?? quest.tier;
+      const rarity = String(rarityRaw || "").toLowerCase();
+      if (!COINS_BY_RARITY[rarity]) {
+        return res.status(500).send({ error: `Unknown rarity on quest: ${rarityRaw}` });
+      }
+
+      coinsAward = COINS_BY_RARITY[rarity];
+      expAward = typeof quest.expReward === "number" ? quest.expReward : EXP_BY_RARITY[rarity];
+
+      filter.questKey = questKey;
+    } else {
+      // custom
+      if (!customQuestId || typeof customQuestId !== "string") {
+        return res.status(400).send({ error: "customQuestId is required" });
+      }
+
+      const cq = await CustomQuest.findOne({
+        _id: customQuestId,
+        $or: [{ visibility: "public" }, { creatorId: req.user._id }],
+      }).lean();
+
+      if (!cq)
+        return res.status(400).send({ error: "Custom quest not found or not visible to you" });
+
+      if (!cq) return res.status(400).send({ error: "Custom quest not found" });
+
+      coinsAward = 0;
+      expAward = 20;
+
+      filter.customQuestId = customQuestId;
     }
-
-    const COINS_BY_RARITY = { common: 10, rare: 25, epic: 60, legendary: 150 };
-    const EXP_BY_RARITY = { common: 10, rare: 25, epic: 60, legendary: 150 };
-
-    const quest = await Quest.findOne({ questKey }).lean();
-    if (!quest) return res.status(400).send({ error: "Invalid questKey (quest not found)" });
-
-    const rarityRaw = quest.rarity ?? quest.rarityLevel ?? quest.tier;
-    const rarity = String(rarityRaw || "").toLowerCase();
-    if (!COINS_BY_RARITY[rarity]) {
-      return res.status(500).send({ error: `Unknown rarity on quest: ${rarityRaw}` });
-    }
-
-    const coinsAward = COINS_BY_RARITY[rarity];
-    const expAward = typeof quest.expReward === "number" ? quest.expReward : EXP_BY_RARITY[rarity];
-
-    const filter = { userId: req.user._id, questKey };
 
     const existing = await UserQuest.findOne(filter).lean();
     const wasCompleted = !!existing?.isCompleted;
@@ -226,14 +253,18 @@ router.patch("/userquests", async (req, res) => {
       filter,
       {
         $set: { isCompleted, completedAt: isCompleted ? new Date() : null },
-        $setOnInsert: { userId: req.user._id, questKey },
+        $setOnInsert: {
+          userId: req.user._id,
+          source,
+          ...(source === "builtin" ? { questKey } : { customQuestId }),
+        },
       },
       { new: true, upsert: true, runValidators: true }
     ).lean();
 
     let awarded = null;
-    let currentQuestKeys = null;
     let currentQuests = null;
+    let currentQuestKeys = null;
 
     if (isNowCompleting) {
       const user = await User.findById(req.user._id);
@@ -248,29 +279,31 @@ router.patch("/userquests", async (req, res) => {
         user.level += 1;
       }
 
-      const current = (user.currentQuestKeys ?? []).map(Number);
+      // Only replace currentQuestKeys for BUILTIN quests (custom quests are separate list)
+      if (source === "builtin") {
+        const current = (user.currentQuestKeys ?? []).map(Number);
 
-      if (current.includes(questKey)) {
-        const replacement = await getOneRandomAvailableQuestKey(user._id, current);
+        if (current.includes(questKey)) {
+          const replacement = await getOneRandomAvailableQuestKey(user._id, current);
 
-        const nextKeys = current
-          .map((k) => (k === questKey ? replacement : k))
-          .filter((k) => k != null);
+          const nextKeys = current
+            .map((k) => (k === questKey ? replacement : k))
+            .filter((k) => k != null);
 
-        user.currentQuestKeys = nextKeys;
+          user.currentQuestKeys = nextKeys;
+        }
+
+        currentQuestKeys = (user.currentQuestKeys ?? []).map(Number);
+
+        const found = await Quest.find({ questKey: { $in: currentQuestKeys } }).lean();
+        const byKey = new Map(found.map((q) => [Number(q.questKey), q]));
+        currentQuests = currentQuestKeys.map((k) => byKey.get(Number(k))).filter(Boolean);
       }
 
       await user.save();
       req.session.user = user.toObject ? user.toObject() : user;
 
-      awarded = { coins: coinsAward, exp: expAward, rarity };
-
-      currentQuestKeys = (user.currentQuestKeys ?? []).map(Number);
-
-      // fetch + keep order same as keys
-      const found = await Quest.find({ questKey: { $in: currentQuestKeys } }).lean();
-      const byKey = new Map(found.map((q) => [Number(q.questKey), q]));
-      currentQuests = currentQuestKeys.map((k) => byKey.get(Number(k))).filter(Boolean);
+      awarded = { coins: coinsAward, exp: expAward, source };
     }
 
     return res.send({ userQuest: doc, awarded, currentQuestKeys, currentQuests });
@@ -292,18 +325,46 @@ router.get("/journal", async (req, res) => {
 
     const userId = req.user._id;
 
-    // completed quest keys
-    const completed = await UserQuest.find({ userId, isCompleted: true }).select("questKey");
-    const keys = completed.map((d) => d.questKey);
+    const completed = await UserQuest.find({ userId, isCompleted: true })
+      .select("source questKey customQuestId")
+      .lean();
 
-    if (keys.length === 0) return res.send({ quests: [], journals: [] });
+    const builtinKeys = completed
+      .filter((d) => d.source === "builtin")
+      .map((d) => Number(d.questKey))
+      .filter((k) => Number.isFinite(k));
 
-    const quests = await Quest.find({ questKey: { $in: keys } });
+    const customIds = completed
+      .filter((d) => d.source === "custom")
+      .map((d) => String(d.customQuestId))
+      .filter(Boolean);
 
-    // fetch existing journals (some may not exist yet)
-    const journals = await JournalEntry.find({ userId, questKey: { $in: keys } });
+    // Fetch quest docs
+    const [builtinQuests, customQuests] = await Promise.all([
+      builtinKeys.length
+        ? Quest.find({ questKey: { $in: builtinKeys } }).lean()
+        : Promise.resolve([]),
+      customIds.length ? CustomQuest.find({ _id: { $in: customIds } }).lean() : Promise.resolve([]),
+    ]);
 
-    res.send({ quests, journals });
+    // Keep builtin order by key (optional, nice UX)
+    const builtinByKey = new Map(builtinQuests.map((q) => [Number(q.questKey), q]));
+    const builtinOrdered = builtinKeys.map((k) => builtinByKey.get(k)).filter(Boolean);
+
+    // Journals for BOTH sources
+    const journals = await JournalEntry.find({
+      userId,
+      $or: [
+        { source: "builtin", questKey: { $in: builtinKeys } },
+        { source: "custom", customQuestId: { $in: customIds } },
+      ],
+    }).lean();
+
+    res.send({
+      builtinQuests: builtinOrdered,
+      customQuests,
+      journals,
+    });
   } catch (err) {
     console.log(err);
     res.status(500).send({ error: "Failed to load journal" });
@@ -324,10 +385,11 @@ router.patch("/journal", async (req, res) => {
     if (!req.user) return res.status(401).send({ error: "Not logged in" });
 
     const userId = req.user._id;
-    let { questKey, text, photoUrls } = req.body;
+    let { source, questKey, customQuestId, text, photoUrls } = req.body;
 
-    questKey = Number(questKey);
-    if (Number.isNaN(questKey)) return res.status(400).send({ error: "questKey must be a number" });
+    if (source !== "builtin" && source !== "custom") {
+      return res.status(400).send({ error: "source must be 'builtin' or 'custom'" });
+    }
 
     const $set = {};
     if (text !== undefined) {
@@ -341,11 +403,29 @@ router.patch("/journal", async (req, res) => {
       $set.photoUrls = photoUrls;
     }
 
+    // Build filter based on source
+    let filter = { userId, source };
+    let insert = { userId, source };
+
+    if (source === "builtin") {
+      questKey = Number(questKey);
+      if (Number.isNaN(questKey))
+        return res.status(400).send({ error: "questKey must be a number" });
+      filter.questKey = questKey;
+      insert.questKey = questKey;
+    } else {
+      if (!customQuestId || typeof customQuestId !== "string") {
+        return res.status(400).send({ error: "customQuestId is required" });
+      }
+      filter.customQuestId = customQuestId;
+      insert.customQuestId = customQuestId;
+    }
+
     const doc = await JournalEntry.findOneAndUpdate(
-      { userId, questKey },
-      { $set, $setOnInsert: { userId, questKey } },
+      filter,
+      { $set, $setOnInsert: insert },
       { new: true, upsert: true, runValidators: true }
-    );
+    ).lean();
 
     res.send(doc);
   } catch (err) {
@@ -645,6 +725,73 @@ router.patch("/room/item/:instanceId", async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).send({ error: "Failed to update placed item" });
+  }
+});
+
+// POST /api/customquests  (create)
+router.post("/customquests", async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).send({ error: "Not logged in" });
+
+    const { title, description, tags, visibility } = req.body;
+
+    if (typeof title !== "string" || title.trim().length < 3) {
+      return res.status(400).send({ error: "title must be at least 3 chars" });
+    }
+    if (typeof description !== "string" || description.trim().length < 5) {
+      return res.status(400).send({ error: "description must be at least 5 chars" });
+    }
+    if (tags !== undefined && (!Array.isArray(tags) || !tags.every((t) => typeof t === "string"))) {
+      return res.status(400).send({ error: "tags must be string[]" });
+    }
+
+    const allowed = new Set(["private", "friends", "public"]);
+    const vis = visibility === undefined ? "public" : String(visibility);
+    if (!allowed.has(vis)) {
+      return res.status(400).send({ error: "visibility must be private|friends|public" });
+    }
+
+    const doc = await CustomQuest.create({
+      creatorId: req.user._id,
+      title: title.trim(),
+      description: description.trim(),
+      tags: (tags || []).map((t) => t.trim()).filter(Boolean),
+      visibility: vis,
+    });
+
+    res.send(doc);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ error: "Failed to create custom quest" });
+  }
+});
+
+// GET /api/customquests (browse)
+router.get("/customquests", async (req, res) => {
+  try {
+    const { search, tag } = req.query;
+
+    const filter = {
+      $or: [
+        { visibility: "public" },
+        ...(req.user
+          ? [{ creatorId: req.user._id }] // show my private/friends too
+          : []),
+      ],
+    };
+
+    if (tag) filter.tags = String(tag);
+
+    if (search && String(search).trim()) {
+      filter.$text = { $search: String(search).trim() };
+    }
+
+    const docs = await CustomQuest.find(filter).sort({ createdAt: -1 }).limit(100).lean();
+
+    res.send(docs);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ error: "Failed to load custom quests" });
   }
 });
 

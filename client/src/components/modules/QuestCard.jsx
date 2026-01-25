@@ -16,8 +16,6 @@ import SingleQuestBlock from "./SingleQuestBlock";
 const QuestCard = (props) => {
   return (
     <>
-      <h5>QuestCard</h5>
-
       {props.loading ? (
         <p>Loading...</p>
       ) : props.currentQuests.length === 0 ? (

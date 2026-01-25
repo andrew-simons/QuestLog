@@ -2,22 +2,44 @@ import React from "react";
 import SingleJournalBlock from "./SingleJournalBlock";
 
 const JournalCard = (props) => {
-  if (props.loading) return <p>Loading...</p>;
+  if (props.loading) {
+    return (
+      <div className="jrState">
+        <div className="jrSpinner" />
+        <div>
+          <div className="jrStateTitle">Loading your journal…</div>
+          <div className="jrStateSub">Fetching completed quests and entries.</div>
+        </div>
+      </div>
+    );
+  }
+
   if (!props.completedQuests || props.completedQuests.length === 0) {
-    return <p>No completed quests yet.</p>;
+    return (
+      <div className="jrEmpty">
+        <div className="jrEmptyIcon">📓</div>
+        <div className="jrEmptyTitle">No entries yet</div>
+        <div className="jrEmptySub">
+          Complete a quest, then come back here to write notes and add photos.
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div style={{  overflowY: "auto" }}>
-      {props.completedQuests.map((quest) => (
-        <SingleJournalBlock
-          key={quest.questKey}
-          quest={quest}
-          journal={props.getJournalFor(quest.questKey)}
-          onSave={(updates) => props.onSaveJournal(quest.questKey, updates)}
-          saving={props.savingKey === quest.questKey}
-        />
-      ))}
+    <div className="jrList">
+      {props.completedQuests.map((item) => {
+        const key = `${item.source}:${String(item.id)}`;
+        return (
+          <SingleJournalBlock
+            key={key}
+            item={item}
+            journal={props.getJournalFor(item)}
+            onSave={(updates) => props.onSaveJournal(item, updates)}
+            saving={props.savingKey === key}
+          />
+        );
+      })}
     </div>
   );
 };

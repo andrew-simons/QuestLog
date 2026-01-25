@@ -1,0 +1,473 @@
+.jrPage {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 22px 14px 40px;
+}
+
+.jrHero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.jrH1 {
+  margin: 0;
+  font-size: 34px;
+  letter-spacing: -0.02em;
+}
+
+.jrSubtitle {
+  margin-top: 6px;
+  color: rgba(0, 0, 0, 0.65);
+  line-height: 1.4;
+}
+
+/* Stats */
+.jrStats {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 10px;
+}
+
+.jrStat {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  min-width: 105px;
+}
+
+.jrStatNum {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.jrStatLbl {
+  margin-top: 2px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+/* Controls */
+.jrControls {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  margin: 14px 0 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+}
+
+.jrSearchWrap {
+  flex: 1;
+  min-width: 240px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: white;
+}
+
+.jrSearchIcon {
+  opacity: 0.5;
+  font-size: 14px;
+}
+
+.jrSearch {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 14px;
+}
+
+.jrClear {
+  border: none;
+  background: rgba(0, 0, 0, 0.06);
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.jrPills {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.jrPill {
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 8px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.jrPill.active {
+  background: white;
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.jrSelectWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.jrSelectLabel {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.jrSelect {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 9px 10px;
+  background: white;
+}
+
+/* List */
+.jrList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Loading / empty states */
+.jrState {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px dashed rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.jrSpinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  border-top-color: rgba(0, 0, 0, 0.55);
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.jrStateTitle {
+  font-weight: 700;
+}
+.jrStateSub {
+  margin-top: 2px;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.jrEmpty {
+  text-align: center;
+  padding: 44px 20px;
+  border-radius: 18px;
+  border: 1px dashed rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.jrEmptyIcon {
+  font-size: 34px;
+}
+.jrEmptyTitle {
+  margin-top: 10px;
+  font-size: 18px;
+  font-weight: 800;
+}
+.jrEmptySub {
+  margin-top: 6px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+/* Journal Block Card */
+.jbCard {
+  border-radius: 18px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.65));
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.jbHeader {
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.jbTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.jbTitle {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+
+.jbRightMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.jbDirtyDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.jbStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.7);
+}
+.jbStatus.ok {
+  color: rgba(0, 100, 0, 0.9);
+}
+.jbStatus.bad {
+  color: rgba(150, 0, 0, 0.9);
+}
+
+.jbBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.jbDesc {
+  margin-top: 10px;
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.jbBody {
+  padding: 14px;
+}
+
+.jbLabel {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.72);
+  margin-bottom: 6px;
+}
+
+.jbTextarea {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 12px;
+  font-size: 14px;
+  line-height: 1.45;
+  resize: vertical;
+  outline: none;
+  background: white;
+}
+
+.jbTextarea:focus {
+  border-color: rgba(0, 0, 0, 0.25);
+}
+
+.jbPhotosSection {
+  margin-top: 14px;
+}
+
+.jbPhotosTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.jbHint {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.jbPhotoInputRow {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.jbPhotoInputWrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: white;
+}
+
+.jbPhotoIcon {
+  opacity: 0.6;
+  display: inline-flex;
+}
+
+.jbPhotoInput {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 14px;
+}
+
+.jbChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.jbChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.jbChipText {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.7);
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jbChipX {
+  border: none;
+  background: rgba(0, 0, 0, 0.06);
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.jbGrid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.jbImgWrap {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.jbImg {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+  transform: scale(1);
+  transition: transform 180ms ease;
+}
+
+.jbImgWrap:hover .jbImg {
+  transform: scale(1.04);
+}
+
+.jbImgRemove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.jbFooter {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.jbSmall {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.jbSmallHint {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.jbBtn {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 14px;
+  padding: 10px 12px;
+  cursor: pointer;
+  background: white;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.jbBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.jbBtn.primary {
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
+}
+
+.jbBtn.secondary {
+  background: rgba(255, 255, 255, 0.85);
+}
