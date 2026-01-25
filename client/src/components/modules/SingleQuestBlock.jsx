@@ -1,31 +1,29 @@
 import React from "react";
 import "../../utilities.css";
 
-/**
- * Props:
- * - quest: { questKey, title, rarity, xpReward }
- * - isCompleted: boolean
- * - onToggle: (newVal: boolean) => void
- * - saving: boolean
- */
 const SingleQuestBlock = (props) => {
   const { quest, isCompleted, onToggle, saving } = props;
 
   return (
-    <span>
-      <hr />
-      <h3>{quest.title}</h3>
-      <p>
-        Rarity: {quest.rarity}; XP Reward: {quest.xpReward}
-      </p>
+    <div className={`questRow ${isCompleted ? "done" : ""}`}>
+      <div className="questMain">
+        <h3 className="questTitle">{quest.title}</h3>
+        <div className="questMeta">
+          <span className="metaChip">Rarity: {quest.rarity}</span>
+          <span className="metaChip">XP: {quest.xpReward}</span>
+        </div>
+      </div>
 
-      <input
-        type="checkbox"
-        checked={isCompleted}
-        onChange={(e) => onToggle(e.target.checked)}
-        disabled={saving}
-      />
-    </span>
+      <label className="checkPill">
+        <input
+          type="checkbox"
+          checked={isCompleted}
+          onChange={(e) => onToggle(e.target.checked)}
+          disabled={saving}
+        />
+        <span>{saving ? "Saving…" : isCompleted ? "Done" : "Complete"}</span>
+      </label>
+    </div>
   );
 };
 

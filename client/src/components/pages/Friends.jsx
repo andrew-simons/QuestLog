@@ -8,6 +8,9 @@ export default function Friends() {
   const [friends, setFriends] = useState([]);
   const [incoming, setIncoming] = useState([]);
 
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+
   const [loadingMe, setLoadingMe] = useState(true);
   const [loadingFriends, setLoadingFriends] = useState(true);
   const [loadingIncoming, setLoadingIncoming] = useState(true);
@@ -87,6 +90,10 @@ export default function Friends() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (me?.name) setNameInput(me.name);
+  }, [me]);
+
   const isLoggedOut = !loadingMe && (!me || !me._id);
 
   async function sendRequestByCode() {
@@ -146,6 +153,23 @@ export default function Friends() {
     window.location.href = `/room/${friendUserId}`;
   }
 
+  async function saveName() {
+    setError("");
+    try {
+      const updated = await apiJson("/api/me/name", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: nameInput }),
+      });
+
+      setMe(updated);
+      setEditingName(false);
+      showToast("Name updated");
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
   return (
     <div className="friendsPage">
       {toast && <div className="toast">{toast}</div>}
@@ -200,7 +224,34 @@ export default function Friends() {
 
               <div className="field">
                 <div className="fieldLabel">Your name</div>
-                <div className="pill">{me?.name || "—"}</div>
+
+                {!editingName ? (
+                  <>
+                    <div className="fieldRow">
+                      <div className="pill">{me?.name || "—"}</div>
+                      <button className="btn" onClick={() => setEditingName(true)}>
+                        Edit
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="fieldRow">
+                      <input
+                        className="input"
+                        value={nameInput}
+                        onChange={(e) => setNameInput(e.target.value)}
+                      />
+                      <button className="btn btnPrimary" onClick={saveName}>
+                        Save
+                      </button>
+                      <button className="btn btnGhost" onClick={() => setEditingName(false)}>
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                )}
+
                 <div className="hint">This is what friends will see.</div>
               </div>
             </div>
@@ -250,10 +301,16 @@ export default function Friends() {
                       </div>
                     </div>
                     <div className="listActions">
-                      <button className="btn btnPrimary" onClick={() => acceptRequest(edge.requester._id)}>
+                      <button
+                        className="btn btnPrimary"
+                        onClick={() => acceptRequest(edge.requester._id)}
+                      >
                         Accept
                       </button>
-                      <button className="btn btnDanger" onClick={() => declineRequest(edge.requester._id)}>
+                      <button
+                        className="btn btnDanger"
+                        onClick={() => declineRequest(edge.requester._id)}
+                      >
                         Decline
                       </button>
                     </div>

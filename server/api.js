@@ -961,6 +961,24 @@ router.post("/friends/requestByCode", async (req, res) => {
   }
 });
 
+// POST /api/me/name
+router.post("/me/name", async (req, res) => {
+  if (!req.user) return res.status(401).send({ error: "Not logged in" });
+
+  const { name } = req.body;
+  if (!name || name.trim().length < 1) {
+    return res.status(400).send({ error: "Invalid name" });
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { name: name.trim() },
+    { new: true }
+  );
+
+  res.send(user);
+});
+
 
 // anything else falls to this "not found" case
 router.all("*", (req, res) => {

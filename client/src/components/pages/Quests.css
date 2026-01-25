@@ -1,35 +1,52 @@
 .questsPage {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 24px 16px 40px;
+}
+
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 18px;
 }
 
 .pageTitle {
-  margin: 0 0 16px;
+  margin: 0;
+  font-size: 28px;
+}
+
+.pageSub {
+  margin: 6px 0 0;
+  opacity: 0.75;
 }
 
 .questsGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .questsGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .panel {
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,0.10);
+  border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  background: white;
 }
 
 .panelHeader {
-  padding: 16px;
   display: flex;
-  gap: 12px;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  gap: 14px;
+  padding: 14px 14px;
+  border-bottom: 1px solid rgba(0,0,0,0.07);
 }
 
 .panelTitle {
@@ -45,8 +62,12 @@
 
 .panelActions {
   display: flex;
-  gap: 10px;
   align-items: center;
+  gap: 10px;
+}
+
+.panelBody {
+  padding: 12px 14px 14px;
 }
 
 .inlineField {
@@ -54,53 +75,69 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  opacity: 0.85;
+  opacity: 0.9;
 }
 
-.panelBody {
-  padding: 16px;
+.inlineField select {
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.14);
+  padding: 6px 10px;
+  background: white;
 }
 
-.primaryBtn {
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: rgba(0, 0, 0, 0.92);
-  color: white;
-  cursor: pointer;
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(0,0,0,0.07);
 }
 
-.ghostBtn {
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: transparent;
-  cursor: pointer;
+.searchInput {
+  flex: 1;
+  min-width: 220px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.14);
+  padding: 8px 10px;
+  outline: none;
 }
 
-.primaryBtn:disabled,
-.ghostBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.checkField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.emptyState {
+  padding: 18px 8px;
+  text-align: center;
+  opacity: 0.8;
 }
 
 .customList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .customCard {
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0,0,0,0.10);
   border-radius: 14px;
-  padding: 12px;
+  padding: 12px 12px;
+  background: rgba(0,0,0,0.02);
+}
+
+.customCard.done {
+  opacity: 0.75;
 }
 
 .customTop {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
 }
 
 .customTitle {
@@ -109,70 +146,124 @@
 }
 
 .customDesc {
-  margin: 8px 0 0;
+  margin: 10px 0 0;
   opacity: 0.85;
+  line-height: 1.35;
 }
 
-.customActions {
-  margin-top: 10px;
+.tagRow {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 .pill {
-  font-size: 12px;
-  padding: 4px 8px;
   border-radius: 999px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  opacity: 0.85;
-}
-
-.emptyState {
-  padding: 16px;
-  border: 1px dashed rgba(0, 0, 0, 0.2);
-  border-radius: 14px;
-  text-align: center;
-  opacity: 0.9;
-}
-
-/* Modal */
-.modalBackdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-
-.modal {
-  width: 100%;
-  max-width: 520px;
+  padding: 4px 8px;
+  font-size: 12px;
+  border: 1px solid rgba(0,0,0,0.12);
   background: white;
-  border-radius: 18px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.25);
+  text-transform: lowercase;
 }
 
-.modalHeader {
-  padding: 14px 16px;
+.tagPill {
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 12px;
+  border: 1px solid rgba(0,0,0,0.10);
+  background: rgba(0,0,0,0.03);
+}
+
+.tagMore {
+  font-size: 12px;
+  opacity: 0.7;
+  padding: 4px 6px;
+}
+
+/* Built-in quest rows (if you use the nicer SingleQuestBlock) */
+.questRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  gap: 12px;
+  padding: 12px 12px;
+  border: 1px solid rgba(0,0,0,0.10);
+  border-radius: 14px;
+  background: rgba(0,0,0,0.02);
+  margin-bottom: 10px;
 }
 
-.iconBtn {
-  background: transparent;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  opacity: 0.8;
+.questRow.done {
+  opacity: 0.75;
+}
+
+.questTitle {
+  margin: 0;
+  font-size: 15px;
+}
+
+.questMeta {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.metaChip {
+  font-size: 12px;
+  border: 1px solid rgba(0,0,0,0.10);
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: white;
+  opacity: 0.9;
+}
+
+.checkPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 999px;
+  padding: 8px 10px;
+  background: white;
+  font-size: 13px;
+  user-select: none;
+}
+
+.checkPill input {
+  transform: translateY(1px);
+}
+
+/* Modal polish */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 50;
+}
+
+.modal {
+  width: min(520px, 100%);
+  background: white;
+  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,0.12);
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 14px;
+  border-bottom: 1px solid rgba(0,0,0,0.07);
 }
 
 .modalBody {
-  padding: 16px;
+  padding: 14px;
   display: grid;
   gap: 12px;
 }
@@ -182,18 +273,12 @@
   gap: 6px;
 }
 
-.field > span {
-  font-size: 13px;
-  opacity: 0.85;
-}
-
 .field input,
 .field textarea,
 .field select {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.14);
+  padding: 8px 10px;
 }
 
 .field textarea {
@@ -205,12 +290,13 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 4px;
+  padding-top: 6px;
 }
 
-/* Responsive */
-@media (max-width: 900px) {
-  .questsGrid {
-    grid-template-columns: 1fr;
-  }
+.iconBtn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  opacity: 0.7;
 }

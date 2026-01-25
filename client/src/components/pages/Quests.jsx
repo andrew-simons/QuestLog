@@ -1,9 +1,22 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useMemo } from "react";
 import { get, patch, post } from "../../utilities";
 import "../../utilities.css";
 import { UserContext } from "../App";
 import QuestCard from "../modules/QuestCard";
 import "./Quests.css";
+
+const rarityRank = (rarity) => {
+  // adjust to your actual rarity values if needed
+  const order = {
+    common: 1,
+    uncommon: 2,
+    rare: 3,
+    epic: 4,
+    legendary: 5,
+  };
+  if (!rarity) return 999;
+  return order[String(rarity).toLowerCase()] ?? 999;
+};
 
 const Quests = () => {
   const { userId } = useContext(UserContext);
@@ -23,8 +36,16 @@ const Quests = () => {
   const [newTags, setNewTags] = useState("");
   const [newVis, setNewVis] = useState("public");
   const [creating, setCreating] = useState(false);
-
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // NEW: built-in sorting
+  const [sortMode, setSortMode] = useState("rarity"); // "rarity" | "alpha"
+
+  // NEW: custom search + filters
+  const [customSearch, setCustomSearch] = useState("");
+  const [customSort, setCustomSort] = useState("new"); // "new" | "alpha" | "vis" | "status"
+  const [customVisFilter, setCustomVisFilter] = useState("all"); // all/public/friends/private
+  const [customShowCompleted, setCustomShowCompleted] = useState(true);
 
   useEffect(() => {
     if (!userId) return;
@@ -50,43 +71,176 @@ const Quests = () => {
       .finally(() => setLoading(false));
   }, [userId]);
 
+  const isCompletedFor = (questKey) => {
+    const uq = userQuestByKey.get(questKey);
+    return uq?.isCompleted ?? false;
+  };
+
   const isCustomCompletedFor = (customQuestId) => {
     const uq = userQuestByCustomId.get(String(customQuestId));
     return uq?.isCompleted ?? false;
   };
 
+  // NEW: derived sorted built-in list
+  const sortedCurrentQuests = useMemo(() => {
+    const copy = [...currentQuests];
+    if (sortMode === "alpha") {
+      copy.sort((a, b) => String(a.title || "").localeCompare(String(b.title || "")));
+      return copy;
+    }
+    // rarity (default): higher rarity first, tie-break alphabetical
+    copy.sort((a, b) => {
+      const dr = rarityRank(b.rarity) - rarityRank(a.rarity);
+      if (dr !== 0) return dr;
+      return String(a.title || "").localeCompare(String(b.title || ""));
+    });
+    return copy;
+  }, [currentQuests, sortMode]);
+
+  // NEW: build tag options from all custom quests
+  const customTagOptions = useMemo(() => {
+    const set = new Set();
+    customQuests.forEach((cq) => {
+      (cq.tags || []).forEach((t) => set.add(String(t).toLowerCase()));
+    });
+    return ["all", ...Array.from(set).sort((a, b) => a.localeCompare(b))];
+  }, [customQuests]);
+
+  // NEW: derived filtered custom list
+  const filteredCustomQuests = useMemo(() => {
+    const q = customSearch.trim().toLowerCase();
+    const vis = customVisFilter;
+
+    const base = customQuests.filter((cq) => {
+      const title = String(cq.title || "").toLowerCase();
+      const desc = String(cq.description || "").toLowerCase();
+      const tags = (cq.tags || []).map((t) => String(t).toLowerCase()); // still searchable
+      const visibility = String(cq.visibility || "public");
+
+      // search text (title/desc/tags)
+      if (q) {
+        const hit = title.includes(q) || desc.includes(q) || tags.some((t) => t.includes(q));
+        if (!hit) return false;
+      }
+
+      // visibility filter
+      if (vis !== "all" && visibility !== vis) return false;
+
+      // completed filter
+      if (!customShowCompleted) {
+        const done = isCustomCompletedFor(cq._id);
+        if (done) return false;
+      }
+
+      return true;
+    });
+
+    const getTime = (cq) => (cq.createdAt ? new Date(cq.createdAt).getTime() : 0);
+
+    // sorting
+    const sorted = [...base].sort((a, b) => {
+      if (customSort === "alpha") {
+        return String(a.title || "").localeCompare(String(b.title || ""));
+      }
+      if (customSort === "vis") {
+        const va = String(a.visibility || "public");
+        const vb = String(b.visibility || "public");
+        const d = va.localeCompare(vb);
+        if (d !== 0) return d;
+        return getTime(b) - getTime(a);
+      }
+      if (customSort === "status") {
+        // incomplete first, then completed
+        const da = isCustomCompletedFor(a._id) ? 1 : 0;
+        const db = isCustomCompletedFor(b._id) ? 1 : 0;
+        const d = da - db;
+        if (d !== 0) return d;
+        return getTime(b) - getTime(a);
+      }
+      // default: newest first
+      return getTime(b) - getTime(a);
+    });
+
+    return sorted;
+  }, [
+    customQuests,
+    customSearch,
+    customVisFilter,
+    customShowCompleted,
+    customSort,
+    userQuestByCustomId, // so "status" updates when completion changes
+  ]);
+
   const handleToggleCustomQuest = (customQuestId, isCompleted) => {
-    if (!userId || savingKey === customQuestId) return;
-    setSavingKey(customQuestId);
+    const idStr = String(customQuestId);
+    if (!userId || savingKey === idStr) return;
+    setSavingKey(idStr);
 
     const prevWasCompleted = isCustomCompletedFor(customQuestId);
 
+    // optimistic update
     setUserQuestByCustomId((prev) => {
       const next = new Map(prev);
-      const prevDoc = next.get(customQuestId) || { customQuestId, source: "custom" };
-      next.set(customQuestId, { ...prevDoc, customQuestId, source: "custom", isCompleted });
+      const prevDoc = next.get(idStr) || { customQuestId: idStr, source: "custom" };
+      next.set(idStr, { ...prevDoc, customQuestId: idStr, source: "custom", isCompleted });
       return next;
     });
 
-    patch("/api/userquests", { source: "custom", customQuestId, isCompleted })
+    patch("/api/userquests", { source: "custom", customQuestId: idStr, isCompleted })
       .then((serverResp) => {
         setUserQuestByCustomId((prev) => {
           const next = new Map(prev);
-          next.set(customQuestId, serverResp.userQuest);
+          next.set(idStr, serverResp.userQuest);
           return next;
         });
       })
       .catch((err) => {
         console.log(err);
+        // rollback
         setUserQuestByCustomId((prev) => {
           const next = new Map(prev);
-          const prevDoc = next.get(customQuestId) || { customQuestId, source: "custom" };
-          next.set(customQuestId, {
+          const prevDoc = next.get(idStr) || { customQuestId: idStr, source: "custom" };
+          next.set(idStr, {
             ...prevDoc,
-            customQuestId,
+            customQuestId: idStr,
             source: "custom",
             isCompleted: prevWasCompleted,
           });
+          return next;
+        });
+      })
+      .finally(() => setSavingKey(null));
+  };
+
+  const handleToggleQuest = (questKey, isCompleted) => {
+    if (!userId || savingKey === questKey) return;
+    setSavingKey(questKey);
+
+    const prevWasCompleted = isCompletedFor(questKey);
+
+    // optimistic
+    setUserQuestByKey((prev) => {
+      const next = new Map(prev);
+      const prevDoc = next.get(questKey) || { questKey };
+      next.set(questKey, { ...prevDoc, questKey, isCompleted });
+      return next;
+    });
+
+    patch("/api/userquests", { source: "builtin", questKey, isCompleted })
+      .then((serverResp) => {
+        setUserQuestByKey((prev) => {
+          const next = new Map(prev);
+          next.set(questKey, serverResp.userQuest);
+          return next;
+        });
+        if (serverResp.currentQuests) setCurrentQuests(serverResp.currentQuests);
+      })
+      .catch((err) => {
+        console.log(err);
+        setUserQuestByKey((prev) => {
+          const next = new Map(prev);
+          const prevDoc = next.get(questKey) || { questKey };
+          next.set(questKey, { ...prevDoc, questKey, isCompleted: prevWasCompleted });
           return next;
         });
       })
@@ -104,48 +258,6 @@ const Quests = () => {
       .finally(() => setRefreshing(false));
   }
 
-  const handleToggleQuest = (questKey, isCompleted) => {
-    if (!userId || savingKey === questKey) return;
-    setSavingKey(questKey);
-
-    const prevWasCompleted = isCompletedFor(questKey);
-
-    // optimistic update
-    setUserQuestByKey((prev) => {
-      const next = new Map(prev);
-      const prevDoc = next.get(questKey) || { questKey };
-      next.set(questKey, { ...prevDoc, questKey, isCompleted });
-      return next;
-    });
-
-    patch("/api/userquests", { source: "builtin", questKey, isCompleted })
-      .then((serverResp) => {
-        setUserQuestByKey((prev) => {
-          const next = new Map(prev);
-          next.set(questKey, serverResp.userQuest);
-          return next;
-        });
-
-        if (serverResp.currentQuests) setCurrentQuests(serverResp.currentQuests);
-      })
-      .catch((err) => {
-        console.log(err);
-        // rollback to exact previous state
-        setUserQuestByKey((prev) => {
-          const next = new Map(prev);
-          const prevDoc = next.get(questKey) || { questKey };
-          next.set(questKey, { ...prevDoc, questKey, isCompleted: prevWasCompleted });
-          return next;
-        });
-      })
-      .finally(() => setSavingKey(null));
-  };
-
-  const isCompletedFor = (questKey) => {
-    const uq = userQuestByKey.get(questKey);
-    return uq?.isCompleted ?? false;
-  };
-
   const handleCreateCustomQuest = async (e) => {
     e.preventDefault();
     if (!userId || creating) return;
@@ -154,7 +266,7 @@ const Quests = () => {
     try {
       const tags = newTags
         .split(",")
-        .map((t) => t.trim())
+        .map((t) => t.trim().toLowerCase())
         .filter(Boolean);
 
       const created = await post("/api/customquests", {
@@ -164,14 +276,15 @@ const Quests = () => {
         visibility: newVis,
       });
 
-      // show it immediately (prepend)
       setCustomQuests((prev) => [created, ...prev]);
 
-      // reset form
       setNewTitle("");
       setNewDesc("");
       setNewTags("");
       setNewVis("public");
+
+      // optional: close modal on success
+      setShowCreateModal(false);
     } catch (err) {
       console.log(err);
       alert("Failed to create custom quest");
@@ -182,10 +295,15 @@ const Quests = () => {
 
   return (
     <div className="questsPage">
-      <h1 className="pageTitle">Quests</h1>
+      <div className="pageHeader">
+        <div>
+          <h1 className="pageTitle">Quests</h1>
+          <p className="pageSub">Side quest challenges + community challenges!</p>
+        </div>
+      </div>
 
       <div className="questsGrid">
-        {/* LEFT: Built-in quests */}
+        {/* LEFT */}
         <section className="panel">
           <div className="panelHeader">
             <div>
@@ -196,7 +314,12 @@ const Quests = () => {
             <div className="panelActions">
               <label className="inlineField">
                 <span>Sort</span>
-                <select id="sort" name="sortfilter">
+                <select
+                  id="sort"
+                  name="sortfilter"
+                  value={sortMode}
+                  onChange={(e) => setSortMode(e.target.value)}
+                >
                   <option value="rarity">Rarity</option>
                   <option value="alpha">Alphabetical</option>
                 </select>
@@ -210,7 +333,7 @@ const Quests = () => {
 
           <div className="panelBody">
             <QuestCard
-              currentQuests={currentQuests}
+              currentQuests={sortedCurrentQuests}
               loading={loading}
               refreshing={refreshing}
               isCompletedFor={isCompletedFor}
@@ -220,7 +343,7 @@ const Quests = () => {
           </div>
         </section>
 
-        {/* RIGHT: Custom quests */}
+        {/* RIGHT */}
         <section className="panel">
           <div className="panelHeader">
             <div>
@@ -233,38 +356,104 @@ const Quests = () => {
             </button>
           </div>
 
+          {/* NEW: Filter bar */}
+          <div className="filterBar">
+            <input
+              className="searchInput"
+              placeholder="Search title, description, tags…"
+              value={customSearch}
+              onChange={(e) => setCustomSearch(e.target.value)}
+            />
+
+            <label className="inlineField">
+              <span>Sort</span>
+              <select value={customSort} onChange={(e) => setCustomSort(e.target.value)}>
+                <option value="new">Newest</option>
+                <option value="alpha">Alphabetical</option>
+                <option value="vis">Visibility</option>
+                <option value="status">Completion</option>
+              </select>
+            </label>
+
+            <label className="inlineField">
+              <span>Visibility</span>
+              <select value={customVisFilter} onChange={(e) => setCustomVisFilter(e.target.value)}>
+                <option value="all">all</option>
+                <option value="public">public</option>
+                <option value="friends">friends</option>
+                <option value="private">private</option>
+              </select>
+            </label>
+
+            <label className="checkField">
+              <input
+                type="checkbox"
+                checked={customShowCompleted}
+                onChange={(e) => setCustomShowCompleted(e.target.checked)}
+              />
+              <span>Show completed</span>
+            </label>
+          </div>
+
           <div className="panelBody">
-            {customQuests.length === 0 ? (
+            {loading ? (
               <div className="emptyState">
-                <p>No custom quests yet.</p>
-                <button className="ghostBtn" onClick={() => setShowCreateModal(true)}>
-                  Create the first one
+                <p>Loading…</p>
+              </div>
+            ) : filteredCustomQuests.length === 0 ? (
+              <div className="emptyState">
+                <p>No matches.</p>
+                <button
+                  className="ghostBtn"
+                  onClick={() => {
+                    setCustomSearch("");
+                    setCustomTag("all");
+                    setCustomSort("new");
+                    setCustomShowCompleted(true);
+                  }}
+                >
+                  Clear filters
                 </button>
               </div>
             ) : (
               <div className="customList">
-                {customQuests.map((cq) => {
+                {filteredCustomQuests.map((cq) => {
                   const done = isCustomCompletedFor(cq._id);
+                  const vis = cq.visibility || "public";
+                  const tags = (cq.tags || []).slice(0, 4);
+
                   return (
-                    <div key={cq._id} className="customCard">
+                    <div key={cq._id} className={`customCard ${done ? "done" : ""}`}>
                       <div className="customTop">
-                        <h3 className="customTitle">{cq.title}</h3>
-                        <span className={`pill ${cq.visibility || "public"}`}>
-                          {cq.visibility || "public"}
-                        </span>
+                        <div className="customTopLeft">
+                          <h3 className="customTitle">{cq.title}</h3>
+                          <div className="tagRow">
+                            <span className={`pill ${vis}`}>{vis}</span>
+                            {tags.map((t) => (
+                              <span key={t} className="tagPill">
+                                {t}
+                              </span>
+                            ))}
+                            {(cq.tags || []).length > 4 && (
+                              <span className="tagMore">+{cq.tags.length - 4}</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => handleToggleCustomQuest(cq._id, !done)}
+                          disabled={savingKey === String(cq._id)}
+                          className={done ? "ghostBtn" : "primaryBtn"}
+                        >
+                          {savingKey === String(cq._id)
+                            ? "Saving…"
+                            : done
+                              ? "Completed"
+                              : "Mark Complete"}
+                        </button>
                       </div>
 
                       <p className="customDesc">{cq.description}</p>
-
-                      <div className="customActions">
-                        <button
-                          onClick={() => handleToggleCustomQuest(cq._id, !done)}
-                          disabled={savingKey === cq._id}
-                          className={done ? "ghostBtn" : "primaryBtn"}
-                        >
-                          {done ? "Completed" : "Mark Complete"}
-                        </button>
-                      </div>
                     </div>
                   );
                 })}
@@ -285,28 +474,24 @@ const Quests = () => {
               </button>
             </div>
 
-            <form
-              onSubmit={(e) => {
-                handleCreateCustomQuest(e);
-                // if your handler succeeds, you can also close it there
-                // or close it optimistically here:
-                // setShowCreateModal(false);
-              }}
-              className="modalBody"
-            >
+            <form onSubmit={handleCreateCustomQuest} className="modalBody">
               <label className="field">
                 <span>Title</span>
-                <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
+                <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required />
               </label>
 
               <label className="field">
                 <span>Description</span>
-                <textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} />
+                <textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} required />
               </label>
 
               <label className="field">
                 <span>Tags (comma-separated)</span>
-                <input value={newTags} onChange={(e) => setNewTags(e.target.value)} />
+                <input
+                  value={newTags}
+                  onChange={(e) => setNewTags(e.target.value)}
+                  placeholder="gym, study, social"
+                />
               </label>
 
               <label className="field">
