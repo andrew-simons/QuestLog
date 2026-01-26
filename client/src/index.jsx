@@ -9,6 +9,7 @@ import Home from "./components/pages/Home";
 import Quests from "./components/pages/Quests";
 import Journal from "./components/pages/Journal";
 import Friends from "./components/pages/Friends";
+import VisitRoom from "./components/pages/VisitRoom";
 
 import {
   createBrowserRouter,
@@ -30,6 +31,7 @@ const router = createBrowserRouter(
       <Route path="/quests" element={<Quests />} />
       <Route path="/journal" element={<Journal />} />
       <Route path="/friends" element={<Friends />} />
+      <Route path="/room/:userId" element={<VisitRoom />} />
     </Route>
   )
 );

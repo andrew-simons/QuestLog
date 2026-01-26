@@ -32,6 +32,17 @@ module.exports = {
 
     io.on("connection", (socket) => {
       console.log(`socket has connected ${socket.id}`);
+
+      socket.on("room:watch", ({ ownerId }) => {
+        if (!ownerId) return;
+        socket.join(`room:${ownerId}`);
+      });
+
+      socket.on("room:unwatch", ({ ownerId }) => {
+        if (!ownerId) return;
+        socket.leave(`room:${ownerId}`);
+      });
+
       socket.on("disconnect", (reason) => {
         const user = getUserFromSocketID(socket.id);
         removeUser(user, socket);

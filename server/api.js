@@ -54,6 +54,20 @@ router.post("/initsocket", (req, res) => {
   res.send({});
 });
 
+function emitRoomUpdate(userId, roomDoc) {
+  try {
+    const io = socketManager.getIo?.();
+    if (!io) return; // sockets not initialized
+    io.to(`room:${String(userId)}`).emit("room:update", {
+      ownerId: String(userId),
+      placedItems: roomDoc?.placedItems || [],
+      beaver: roomDoc?.beaver || null,
+    });
+  } catch (e) {
+    console.log("emitRoomUpdate failed:", e);
+  }
+}
+
 // |------------------------------|
 // | write your API methods below!|
 // |------------------------------|
@@ -652,6 +666,9 @@ router.post("/room/place", async (req, res) => {
     room.placedItems.push(placed);
     await room.save();
 
+    // broadcast to anyone watching my room
+    emitRoomUpdate(req.user._id, room);
+
     return res.send({ placed, inventoryQty: inv.qty });
   } catch (err) {
     console.error(err);
@@ -680,6 +697,7 @@ router.delete("/room/remove/:instanceId", async (req, res) => {
     const removed = room.placedItems[idx]; // has itemKey
     room.placedItems.splice(idx, 1);
     await room.save();
+    emitRoomUpdate(req.user._id, room);
 
     // refund inventory (upsert row if missing)
     const inv = await Inventory.findOneAndUpdate(
@@ -735,6 +753,7 @@ router.patch("/room/item/:instanceId", async (req, res) => {
     item.scale = scale;
 
     await room.save();
+    emitRoomUpdate(req.user._id, room);
     return res.send(item);
   } catch (err) {
     console.error(err);
@@ -765,7 +784,7 @@ router.post("/customquests", async (req, res) => {
     if (tags !== undefined && (!Array.isArray(tags) || !tags.every((t) => typeof t === "string"))) {
       return res.status(400).send({ error: "tags must be string[]" });
     }
-    
+
     const allowed = new Set(["private", "friends", "public"]);
     const vis = visibility === undefined ? "public" : String(visibility);
     if (!allowed.has(vis)) {
@@ -998,6 +1017,32 @@ router.post("/me/name", async (req, res) => {
 
   res.send(user);
 });
+
+// GET /api/rooms/:userId - read-only load of someone else's room
+router.get("/rooms/:userId", async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).send({ error: "Not logged in" });
+
+    const ownerId = req.params.userId;
+
+    // OPTIONAL: enforce friends-only visibility:
+    // const friendIds = await getAcceptedFriendIds(req.user._id);
+    // const isSelf = String(req.user._id) === String(ownerId);
+    // const isFriend = friendIds.some((id) => String(id) === String(ownerId));
+    // if (!isSelf && !isFriend) return res.status(403).send({ error: "Not allowed" });
+
+    let room = await Room.findOne({ userId: ownerId }).lean();
+    if (!room) return res.send({ userId: ownerId, placedItems: [], beaver: null });
+
+    res.send(room);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ error: "Failed to load room" });
+  }
+});
+
+
+
 
 // anything else falls to this "not found" case
 router.all("*", (req, res) => {
