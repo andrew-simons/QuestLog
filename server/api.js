@@ -24,6 +24,7 @@ const {
   getThreeRandomDistinct,
   xpRequiredForLevel,
   getOneRandomAvailableQuestKey,
+  getAcceptedFriendIds,
 } = require("./helper");
 
 // import authentication library
@@ -230,15 +231,27 @@ router.patch("/userquests", async (req, res) => {
         return res.status(400).send({ error: "customQuestId is required" });
       }
 
-      const cq = await CustomQuest.findOne({
-        _id: customQuestId,
-        $or: [{ visibility: "public" }, { creatorId: req.user._id }],
-      }).lean();
+      const cq = await CustomQuest.findById(customQuestId).lean();
+      if (!cq) {
+        return res.status(400).send({ error: "Custom quest not found" });
+      }
 
-      if (!cq)
-        return res.status(400).send({ error: "Custom quest not found or not visible to you" });
-
-      if (!cq) return res.status(400).send({ error: "Custom quest not found" });
+      // Visibility enforcement
+      if (cq.visibility === "private") {
+        if (String(cq.creatorId) !== String(req.user._id)) {
+          return res.status(400).send({ error: "Custom quest not visible to you" });
+        }
+      } else if (cq.visibility === "friends") {
+        if (String(cq.creatorId) !== String(req.user._id)) {
+          const friendIds = await getAcceptedFriendIds(req.user._id);
+          const ok = friendIds.some((id) => String(id) === String(cq.creatorId));
+          if (!ok) {
+            return res.status(400).send({ error: "Custom quest not visible to you" });
+          }
+        }
+      } else {
+        // public is always ok
+      }
 
       coinsAward = 0;
       expAward = 20;
@@ -742,10 +755,17 @@ router.post("/customquests", async (req, res) => {
     if (typeof description !== "string" || description.trim().length < 5) {
       return res.status(400).send({ error: "description must be at least 5 chars" });
     }
+
+    if (title.trim().length > 30) return res.status(400).send({ error: "title max 30 chars" });
+    if (description.trim().length > 100)
+      return res.status(400).send({ error: "description max 100 chars" });
+    if (Array.isArray(tags) && tags.filter(Boolean).length > 3)
+      return res.status(400).send({ error: "max 3 tags" });
+
     if (tags !== undefined && (!Array.isArray(tags) || !tags.every((t) => typeof t === "string"))) {
       return res.status(400).send({ error: "tags must be string[]" });
     }
-
+    
     const allowed = new Set(["private", "friends", "public"]);
     const vis = visibility === undefined ? "public" : String(visibility);
     if (!allowed.has(vis)) {
@@ -773,13 +793,17 @@ router.get("/customquests", async (req, res) => {
     const { search, tag } = req.query;
 
     const filter = {
-      $or: [
-        { visibility: "public" },
-        ...(req.user
-          ? [{ creatorId: req.user._id }] // show my private/friends too
-          : []),
-      ],
+      $or: [{ visibility: "public" }],
     };
+
+    if (req.user) {
+      const friendIds = await getAcceptedFriendIds(req.user._id);
+
+      filter.$or.push(
+        { creatorId: req.user._id }, // my own (private/friends/public)
+        { visibility: "friends", creatorId: { $in: friendIds } } // friends-only quests from my friends
+      );
+    }
 
     if (tag) filter.tags = String(tag);
 
@@ -970,15 +994,10 @@ router.post("/me/name", async (req, res) => {
     return res.status(400).send({ error: "Invalid name" });
   }
 
-  const user = await User.findByIdAndUpdate(
-    req.user._id,
-    { name: name.trim() },
-    { new: true }
-  );
+  const user = await User.findByIdAndUpdate(req.user._id, { name: name.trim() }, { new: true });
 
   res.send(user);
 });
-
 
 // anything else falls to this "not found" case
 router.all("*", (req, res) => {

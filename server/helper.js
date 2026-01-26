@@ -2,6 +2,7 @@
 const Quest = require("./models/quest");
 const UserQuests = require("./models/userQuests");
 const User = require("./models/user");
+const Friendship = require("./models/friendship");
 
 // takes in a userId string. Outputs three random questKeys that don't include those
 async function getThreeRandomDistinct(user_id) {
@@ -68,9 +69,21 @@ async function generateUniqueFriendCode() {
   }
 }
 
+async function getAcceptedFriendIds(userId) {
+  const edges = await Friendship.find({
+    status: "accepted",
+    $or: [{ requester: userId }, { recipient: userId }],
+  })
+    .select("requester recipient")
+    .lean();
+
+  return edges.map((e) => (String(e.requester) === String(userId) ? e.recipient : e.requester));
+}
+
 module.exports = {
   getThreeRandomDistinct,
   xpRequiredForLevel,
   getOneRandomAvailableQuestKey,
   generateUniqueFriendCode,
+  getAcceptedFriendIds,
 };
