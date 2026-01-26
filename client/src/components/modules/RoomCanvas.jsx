@@ -6,6 +6,27 @@ const ROOM_W = 1000;
 const ROOM_H = 600;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
+// ---------- Floor seam (V-shape) ----------
+const SHOW_FLOOR_DEBUG = false;
+
+const FLOOR_LEFT = { x: 0, y: 570 };
+const FLOOR_CORNER = { x: 500, y: 400 };
+const FLOOR_RIGHT = { x: 1000, y: 570 };
+
+const FLOOR_MARGIN = 24;
+
+const lerp = (a, b, t) => a + (b - a) * t;
+
+function floorTopY(x) {
+  if (x <= FLOOR_CORNER.x) {
+    const t = (x - FLOOR_LEFT.x) / (FLOOR_CORNER.x - FLOOR_LEFT.x);
+    return lerp(FLOOR_LEFT.y, FLOOR_CORNER.y, clamp(t, 0, 1));
+  } else {
+    const t = (x - FLOOR_CORNER.x) / (FLOOR_RIGHT.x - FLOOR_CORNER.x);
+    return lerp(FLOOR_CORNER.y, FLOOR_RIGHT.y, clamp(t, 0, 1));
+  }
+}
+
 // ---------- Asset Manager ----------
 function useAssets() {
   const manifest = useMemo(
@@ -13,7 +34,6 @@ function useAssets() {
       roomBg: "/img/room.png",
       beaverSheet: "/img/beaver.png",
       chair: "/img/items/chair.png",
-      // add more keys as you add catalog imageKey entries
     }),
     []
   );
@@ -77,7 +97,7 @@ function useCanvasSize(containerRef) {
   return size;
 }
 
-// ---------- Sprite helper (unchanged) ----------
+// ---------- Sprite helper ----------
 function getBeaverFrameRect(dir, frameIndex) {
   return { sx: 0, sy: 0, sw: 250, sh: 250 };
 }
@@ -113,13 +133,12 @@ export default function RoomCanvas({
 
   const [selectedItemId, setSelectedItemId] = useState(null);
 
-  // World refs (fast)
   const keysRef = useRef({ w: false, a: false, s: false, d: false, up: false, down: false });
 
   const worldRef = useRef({
     beaver: {
       x: 525,
-      y: 510,
+      y: 510, // feet y
       dir: "down",
       speed: 220,
       frameIndex: 0,
@@ -132,7 +151,21 @@ export default function RoomCanvas({
   const dragRef = useRef({ draggingId: null, grabDx: 0, grabDy: 0 });
   const viewRef = useRef({ scale: 1, offsetX: 0, offsetY: 0 });
 
-  // Debounced save (so holding arrows doesn’t spam PATCH)
+  // ----- NEW: socket throttling state -----
+  const netRef = useRef({
+    lastSentAt: 0,
+    lastX: null,
+    lastY: null,
+    lastDir: null,
+  });
+
+  // ----- NEW: persistence throttle + "send once on stop" -----
+  const persistRef = useRef({
+    t: 0,
+    sentStop: false,
+  });
+
+  // Debounced save (items)
   const saveTimerRef = useRef(null);
 
   const scheduleSaveItem = (id) => {
@@ -142,7 +175,9 @@ export default function RoomCanvas({
 
     window.clearTimeout(saveTimerRef.current);
     saveTimerRef.current = window.setTimeout(() => {
-      patch(`/api/room/item/${id}`, { x: item.x, y: item.y, scale: item.scale }).catch(console.error);
+      patch(`/api/room/item/${id}`, { x: item.x, y: item.y, scale: item.scale }).catch(
+        console.error
+      );
     }, 120);
   };
 
@@ -179,7 +214,7 @@ export default function RoomCanvas({
     return { x: wx * scale + offsetX, y: wy * scale + offsetY };
   }
 
-  // ---- Load room state (owner vs visitor) ----
+  // ---- Load room state ----
   async function loadRoomOnce() {
     const room = editable ? await get("/api/room") : await get(`/api/rooms/${ownerId}`);
 
@@ -214,13 +249,16 @@ export default function RoomCanvas({
     const onRoomUpdate = (payload) => {
       if (!payload || String(payload.ownerId) !== String(ownerId)) return;
 
-      worldRef.current.items = (payload.placedItems || []).map((p) => ({
-        id: p.instanceId,
-        itemKey: p.itemKey,
-        x: p.x,
-        y: p.y,
-        scale: p.scale ?? 1.0,
-      }));
+      // only overwrite items if provided (your current server sometimes sends full room)
+      if (payload.placedItems) {
+        worldRef.current.items = (payload.placedItems || []).map((p) => ({
+          id: p.instanceId,
+          itemKey: p.itemKey,
+          x: p.x,
+          y: p.y,
+          scale: p.scale ?? 1.0,
+        }));
+      }
 
       if (payload.beaver) {
         worldRef.current.beaver.x = payload.beaver.x ?? worldRef.current.beaver.x;
@@ -282,7 +320,6 @@ export default function RoomCanvas({
       }
     };
 
-    // passive:false so preventDefault works (stops page scroll)
     window.addEventListener("keydown", down, { passive: false });
     window.addEventListener("keyup", up, { passive: false });
 
@@ -360,8 +397,6 @@ export default function RoomCanvas({
       await patch(`/api/room/item/${id}`, { x: item.x, y: item.y, scale: item.scale });
     };
 
-    // OPTIONAL: keep wheel scaling too.
-    // If you want ONLY arrow keys, delete onWheel + add/removeEventListener lines below.
     const onWheel = (e) => {
       if (!editable) return;
       if (!selectedItemId) return;
@@ -417,8 +452,8 @@ export default function RoomCanvas({
       if (selectedItemId && (keys.up || keys.down)) {
         const item = w.items.find((it) => it.id === selectedItemId);
         if (item) {
-          const scaleSpeed = 1.4; // bigger = faster
-          const dir = keys.up ? 1 : -1; // if both held, up wins
+          const scaleSpeed = 1.4;
+          const dir = keys.up ? 1 : -1;
           const mult = Math.exp(dir * scaleSpeed * dt);
           item.scale = clamp(item.scale * mult, 0.25, 3.0);
           scheduleSaveItem(selectedItemId);
@@ -437,6 +472,8 @@ export default function RoomCanvas({
       b.isMoving = moving;
 
       if (moving) {
+        persistRef.current.sentStop = false;
+
         const mag = Math.hypot(vx, vy);
         vx /= mag;
         vy /= mag;
@@ -444,14 +481,64 @@ export default function RoomCanvas({
         if (Math.abs(vx) > Math.abs(vy)) b.dir = vx > 0 ? "right" : "left";
         else b.dir = vy > 0 ? "down" : "up";
 
+        // move X first
         b.x = clamp(b.x + vx * b.speed * dt, 0, ROOM_W);
-        b.y = clamp(b.y + vy * b.speed * dt, 0, ROOM_H);
+
+        // clamp Y against the V-shaped seam
+        const topY = floorTopY(b.x) + FLOOR_MARGIN;
+        b.y = clamp(b.y + vy * b.speed * dt, topY, ROOM_H);
 
         b.frameIndex = 0;
         b.frameTimer = 0;
       } else {
         b.frameIndex = 0;
         b.frameTimer = 0;
+      }
+
+      // -------------------------
+      // NEW: socket broadcast (owner -> visitors), throttled
+      // -------------------------
+      if (editable && socket) {
+        const now = performance.now();
+        const SEND_EVERY_MS = 1000 / 15; // ~15 Hz max
+        const POS_EPS = 1.5; // pixels
+        const nx = b.x,
+          ny = b.y,
+          nd = b.dir;
+
+        const movedEnough =
+          netRef.current.lastX == null ||
+          Math.hypot(nx - netRef.current.lastX, ny - netRef.current.lastY) > POS_EPS ||
+          nd !== netRef.current.lastDir;
+
+        if (movedEnough && now - netRef.current.lastSentAt >= SEND_EVERY_MS) {
+          netRef.current.lastSentAt = now;
+          netRef.current.lastX = nx;
+          netRef.current.lastY = ny;
+          netRef.current.lastDir = nd;
+
+          socket.emit("room:beaver", { x: nx, y: ny, dir: nd });
+        }
+      }
+
+      // -------------------------
+      // NEW: persist to Mongo occasionally (owner only)
+      // -------------------------
+      if (editable) {
+        if (moving) {
+          persistRef.current.t += dt;
+          if (persistRef.current.t >= 0.5) {
+            persistRef.current.t = 0;
+            patch("/api/room/beaver", { x: b.x, y: b.y, dir: b.dir }).catch(console.error);
+          }
+        } else {
+          // send one "final" save when stopping so reloads spawn at last spot
+          if (!persistRef.current.sentStop) {
+            persistRef.current.sentStop = true;
+            persistRef.current.t = 0;
+            patch("/api/room/beaver", { x: b.x, y: b.y, dir: b.dir }).catch(console.error);
+          }
+        }
       }
     };
 
@@ -469,6 +556,19 @@ export default function RoomCanvas({
         const tl = worldToScreen(0, 0);
         const br = worldToScreen(ROOM_W, ROOM_H);
         ctx.drawImage(bg, tl.x, tl.y, br.x - tl.x, br.y - tl.y);
+      }
+
+      if (SHOW_FLOOR_DEBUG) {
+        ctx.beginPath();
+        let p = worldToScreen(FLOOR_LEFT.x, FLOOR_LEFT.y);
+        ctx.moveTo(p.x, p.y);
+        p = worldToScreen(FLOOR_CORNER.x, FLOOR_CORNER.y);
+        ctx.lineTo(p.x, p.y);
+        p = worldToScreen(FLOOR_RIGHT.x, FLOOR_RIGHT.y);
+        ctx.lineTo(p.x, p.y);
+        ctx.strokeStyle = "rgba(255,0,0,0.7)";
+        ctx.lineWidth = 3;
+        ctx.stroke();
       }
 
       const { items, beaver } = worldRef.current;
@@ -507,6 +607,7 @@ export default function RoomCanvas({
           const dw = sw * spriteScale;
           const dh = sh * spriteScale;
 
+          // y is feet position (anchor)
           ctx.drawImage(sheet, sx, sy, sw, sh, x - dw / 2, y - dh, dw, dh);
         }
       }
@@ -514,7 +615,7 @@ export default function RoomCanvas({
 
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [assetsReady, dpr, editable, assetsRef, catalogByKey, selectedItemId]);
+  }, [assetsReady, dpr, editable, assetsRef, catalogByKey, selectedItemId, socket]);
 
   return (
     <div ref={containerRef} style={{ flex: 1, position: "relative", overflow: "hidden" }}>

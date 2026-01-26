@@ -26,7 +26,7 @@ const NavBar = () => {
           Journal
         </Link>
         <Link to="/friends" className="NavBar-link sketchTab">
-          Friends
+          Social
         </Link>
 
         <div className="sketchNav-right">

@@ -43,9 +43,24 @@ module.exports = {
         socket.leave(`room:${ownerId}`);
       });
 
-      socket.on("disconnect", (reason) => {
-        const user = getUserFromSocketID(socket.id);
-        removeUser(user, socket);
+      // NEW: owner broadcasts beaver pose; server relays to watchers
+      socket.on("room:beaver", (pose) => {
+        //ensure only the logged-in owner can broadcast their own movement
+        const user = socket.request?.user; // depends on how you attach auth to sockets
+        if (!user) return;
+
+        const ownerId = String(user._id);
+
+        const payload = {
+          ownerId,
+          beaver: {
+            x: pose?.x,
+            y: pose?.y,
+            dir: pose?.dir,
+          },
+        };
+
+        socket.to(`room:${ownerId}`).emit("room:update", payload);
       });
     });
   },

@@ -15,9 +15,6 @@ import Login from "./pages/Login";
 
 export const UserContext = createContext(null);
 
-/**
- * Define the "App" component
- */
 const App = () => {
   const navigate = useNavigate();
   const [userId, setUserId] = useState(undefined);
@@ -25,7 +22,6 @@ const App = () => {
   useEffect(() => {
     get("/api/whoami").then((user) => {
       if (user._id) {
-        // they are registed in the database, and currently logged in.
         setUserId(user._id);
       }
     });

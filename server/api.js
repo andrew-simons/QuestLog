@@ -1041,13 +1041,39 @@ router.get("/rooms/:userId", async (req, res) => {
   }
 });
 
+// Patch the beaver position
+router.patch("/room/beaver", async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).send({ error: "Not logged in" });
 
+    const x = Number(req.body.x);
+    const y = Number(req.body.y);
+    const dir = String(req.body.dir || "down");
 
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      return res.status(400).send({ error: "x and y must be numbers" });
+    }
+
+    const room = await Room.findOneAndUpdate(
+      { userId: req.user._id },
+      { $set: { beaver: { x, y, dir } } },
+      { new: true, upsert: true }
+    );
+
+    // optional, but nice: keeps visitors synced if they join mid-move
+    emitRoomUpdate(req.user._id, room);
+
+    res.send({ ok: true });
+  } catch (e) {
+    console.log(e);
+    res.status(500).send({ error: "Failed to save beaver" });
+  }
+});
+
+module.exports = router;
 
 // anything else falls to this "not found" case
 router.all("*", (req, res) => {
   console.log(`API route not found: ${req.method} ${req.url}`);
   res.status(404).send({ msg: "API route not found" });
 });
-
-module.exports = router;
