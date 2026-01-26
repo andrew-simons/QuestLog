@@ -95,17 +95,6 @@ function pointInItem(px, py, item, img) {
   return px >= left && px <= right && py >= top && py <= bottom;
 }
 
-/**
- * RoomCanvas
- * mode:
- *  - "owner": editable (drag, wheel scale, WASD, patches)
- *  - "visitor": read-only (no edits, optional live updates via sockets)
- *
- * props:
- *  ownerId: whose room to show (for owner mode you can pass null and it will use /api/room)
- *  catalogByKey: Map(itemKey -> itemDef with imageKey)
- *  socket: optional socket.io client instance
- */
 export default function RoomCanvas({
   mode,
   ownerId,
@@ -125,7 +114,7 @@ export default function RoomCanvas({
   const [selectedItemId, setSelectedItemId] = useState(null);
 
   // World refs (fast)
-  const keysRef = useRef({ w: false, a: false, s: false, d: false });
+  const keysRef = useRef({ w: false, a: false, s: false, d: false, up: false, down: false });
 
   const worldRef = useRef({
     beaver: {
@@ -141,8 +130,25 @@ export default function RoomCanvas({
   });
 
   const dragRef = useRef({ draggingId: null, grabDx: 0, grabDy: 0 });
-
   const viewRef = useRef({ scale: 1, offsetX: 0, offsetY: 0 });
+
+  // Debounced save (so holding arrows doesn’t spam PATCH)
+  const saveTimerRef = useRef(null);
+
+  const scheduleSaveItem = (id) => {
+    if (!id) return;
+    const item = worldRef.current.items.find((it) => it.id === id);
+    if (!item) return;
+
+    window.clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = window.setTimeout(() => {
+      patch(`/api/room/item/${id}`, { x: item.x, y: item.y, scale: item.scale }).catch(console.error);
+    }, 120);
+  };
+
+  useEffect(() => {
+    return () => window.clearTimeout(saveTimerRef.current);
+  }, []);
 
   // canvas resolution
   useEffect(() => {
@@ -200,13 +206,12 @@ export default function RoomCanvas({
   // ---- Live updates via sockets (visitor mode) ----
   useEffect(() => {
     if (!socket) return;
-    if (editable) return; // you don't need to listen to your own updates here
+    if (editable) return;
     if (!ownerId) return;
 
     socket.emit("room:watch", { ownerId });
 
     const onRoomUpdate = (payload) => {
-      // payload: { ownerId, placedItems, beaver }
       if (!payload || String(payload.ownerId) !== String(ownerId)) return;
 
       worldRef.current.items = (payload.placedItems || []).map((p) => ({
@@ -243,22 +248,44 @@ export default function RoomCanvas({
 
     const down = (e) => {
       if (e.repeat) return;
+
       const k = e.key.toLowerCase();
       if (k === "w") keysRef.current.w = true;
       if (k === "a") keysRef.current.a = true;
       if (k === "s") keysRef.current.s = true;
       if (k === "d") keysRef.current.d = true;
+
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        keysRef.current.up = true;
+      }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        keysRef.current.down = true;
+      }
     };
+
     const up = (e) => {
       const k = e.key.toLowerCase();
       if (k === "w") keysRef.current.w = false;
       if (k === "a") keysRef.current.a = false;
       if (k === "s") keysRef.current.s = false;
       if (k === "d") keysRef.current.d = false;
+
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        keysRef.current.up = false;
+      }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        keysRef.current.down = false;
+      }
     };
 
-    window.addEventListener("keydown", down);
-    window.addEventListener("keyup", up);
+    // passive:false so preventDefault works (stops page scroll)
+    window.addEventListener("keydown", down, { passive: false });
+    window.addEventListener("keyup", up, { passive: false });
+
     return () => {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
@@ -331,9 +358,10 @@ export default function RoomCanvas({
       if (!item) return;
 
       await patch(`/api/room/item/${id}`, { x: item.x, y: item.y, scale: item.scale });
-      // server will broadcast room:update for watchers
     };
 
+    // OPTIONAL: keep wheel scaling too.
+    // If you want ONLY arrow keys, delete onWheel + add/removeEventListener lines below.
     const onWheel = (e) => {
       if (!editable) return;
       if (!selectedItemId) return;
@@ -345,6 +373,7 @@ export default function RoomCanvas({
       const delta = -e.deltaY;
       const factor = delta > 0 ? 1.06 : 0.94;
       item.scale = clamp(item.scale * factor, 0.25, 3.0);
+      scheduleSaveItem(selectedItemId);
     };
 
     canvas.addEventListener("pointerdown", onDown);
@@ -362,7 +391,7 @@ export default function RoomCanvas({
     };
   }, [editable, assetsRef, catalogByKey, selectedItemId]);
 
-  // Render loop (visitor can still render; owner updates movement too)
+  // Render loop
   useEffect(() => {
     if (!assetsReady) return;
 
@@ -384,6 +413,19 @@ export default function RoomCanvas({
       const b = w.beaver;
       const keys = keysRef.current;
 
+      // ---- ArrowUp/ArrowDown scale selected item ----
+      if (selectedItemId && (keys.up || keys.down)) {
+        const item = w.items.find((it) => it.id === selectedItemId);
+        if (item) {
+          const scaleSpeed = 1.4; // bigger = faster
+          const dir = keys.up ? 1 : -1; // if both held, up wins
+          const mult = Math.exp(dir * scaleSpeed * dt);
+          item.scale = clamp(item.scale * mult, 0.25, 3.0);
+          scheduleSaveItem(selectedItemId);
+        }
+      }
+
+      // ---- WASD movement ----
       let vx = 0,
         vy = 0;
       if (keys.w) vy -= 1;
@@ -444,14 +486,14 @@ export default function RoomCanvas({
 
           const { x, y } = worldToScreen(it.x, it.y);
           const s = viewRef.current.scale * it.scale;
-          const w = img.width * s;
-          const h = img.height * s;
+          const wpx = img.width * s;
+          const hpx = img.height * s;
 
-          ctx.drawImage(img, x - w / 2, y - h, w, h);
+          ctx.drawImage(img, x - wpx / 2, y - hpx, wpx, hpx);
 
           if (editable && it.id === selectedItemId) {
             ctx.strokeStyle = "rgba(0,0,0,0.35)";
-            ctx.strokeRect(x - w / 2, y - h, w, h);
+            ctx.strokeRect(x - wpx / 2, y - hpx, wpx, hpx);
           }
         } else {
           const b = d.it;
