@@ -11,6 +11,8 @@ export default function Home() {
   const [catalog, setCatalog] = useState([]);
   const [inventory, setInventory] = useState([]);
 
+  const [viewerId, setViewerId] = useState(null);
+
   const [reloadToken, setReloadToken] = useState(0);
 
   const catalogByKey = useMemo(() => {
@@ -25,8 +27,8 @@ export default function Home() {
     async function load() {
       const me = await get("/api/whoami");
       if (!me?._id) return;
+      setViewerId(me._id);
       setCoins(me.coins ?? 0);
-
       const [items, inv] = await Promise.all([get("/api/items"), get("/api/inventory")]);
       setCatalog(items || []);
       setInventory(inv || []);
@@ -97,6 +99,8 @@ export default function Home() {
     <div style={{ display: "flex", height: "100vh" }}>
       <RoomCanvas
         mode="owner"
+        viewerId={viewerId}
+        roomId={viewerId}
         reloadToken={reloadToken}
         ownerId={null}
         catalogByKey={catalogByKey}

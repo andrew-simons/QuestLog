@@ -99,6 +99,7 @@ function useCanvasSize(containerRef) {
 
 // ---------- Sprite helper ----------
 function getBeaverFrameRect(dir, frameIndex) {
+  // placeholder; you can expand later
   return { sx: 0, sy: 0, sw: 250, sh: 250 };
 }
 
@@ -117,13 +118,16 @@ function pointInItem(px, py, item, img) {
 
 export default function RoomCanvas({
   mode,
-  ownerId,
+  ownerId, // still used for REST room load in visitor mode
+  roomId, // NEW: presence room id (for multiplayer). owner roomId === ownerId typically
+  viewerId, // NEW: current logged-in user id
   catalogByKey,
   socket,
   onSelectedChange,
   reloadToken,
 }) {
-  const editable = mode === "owner";
+  const canEditItems = mode === "owner";
+  const canMove = !!viewerId; // owner + visitor can move if logged in
 
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
@@ -135,23 +139,35 @@ export default function RoomCanvas({
 
   const keysRef = useRef({ w: false, a: false, s: false, d: false, up: false, down: false });
 
+  // World (items only now)
   const worldRef = useRef({
-    beaver: {
-      x: 525,
-      y: 510, // feet y
-      dir: "down",
-      speed: 220,
-      frameIndex: 0,
-      frameTimer: 0,
-      isMoving: false,
-    },
     items: [],
   });
+
+  // Multiplayer players: userId -> beaver state
+  const playersRef = useRef(new Map());
+
+  // helper: ensure our local beaver object exists
+  const getMyBeaver = () => {
+    if (!viewerId) return null;
+    if (!playersRef.current.has(String(viewerId))) {
+      playersRef.current.set(String(viewerId), {
+        x: 525,
+        y: 510,
+        dir: "down",
+        speed: 220,
+        frameIndex: 0,
+        frameTimer: 0,
+        isMoving: false,
+      });
+    }
+    return playersRef.current.get(String(viewerId));
+  };
 
   const dragRef = useRef({ draggingId: null, grabDx: 0, grabDy: 0 });
   const viewRef = useRef({ scale: 1, offsetX: 0, offsetY: 0 });
 
-  // ----- NEW: socket throttling state -----
+  // socket throttling state (movement broadcast)
   const netRef = useRef({
     lastSentAt: 0,
     lastX: null,
@@ -159,7 +175,7 @@ export default function RoomCanvas({
     lastDir: null,
   });
 
-  // ----- NEW: persistence throttle + "send once on stop" -----
+  // owner persistence throttle + "send once on stop"
   const persistRef = useRef({
     t: 0,
     sentStop: false,
@@ -214,9 +230,9 @@ export default function RoomCanvas({
     return { x: wx * scale + offsetX, y: wy * scale + offsetY };
   }
 
-  // ---- Load room state ----
+  // ---- Load room state (items + owner beaver spawn) ----
   async function loadRoomOnce() {
-    const room = editable ? await get("/api/room") : await get(`/api/rooms/${ownerId}`);
+    const room = canEditItems ? await get("/api/room") : await get(`/api/rooms/${ownerId}`);
 
     worldRef.current.items = (room?.placedItems || []).map((p) => ({
       id: p.instanceId,
@@ -226,22 +242,34 @@ export default function RoomCanvas({
       scale: p.scale ?? 1.0,
     }));
 
+    // Only use REST beaver as initial spawn for the OWNER’s beaver (room owner)
     if (room?.beaver) {
-      worldRef.current.beaver.x = room.beaver.x ?? worldRef.current.beaver.x;
-      worldRef.current.beaver.y = room.beaver.y ?? worldRef.current.beaver.y;
-      worldRef.current.beaver.dir = room.beaver.dir ?? "down";
+      const ridOwner = String(ownerId ?? viewerId ?? "");
+      if (ridOwner) {
+        const prev = playersRef.current.get(ridOwner) || {};
+        playersRef.current.set(ridOwner, {
+          ...prev,
+          x: room.beaver.x ?? prev.x ?? 525,
+          y: room.beaver.y ?? prev.y ?? 510,
+          dir: room.beaver.dir ?? prev.dir ?? "down",
+          speed: prev.speed ?? 220,
+          frameIndex: prev.frameIndex ?? 0,
+          frameTimer: prev.frameTimer ?? 0,
+          isMoving: prev.isMoving ?? false,
+        });
+      }
     }
   }
 
   useEffect(() => {
-    if (!editable && !ownerId) return;
+    if (!canEditItems && !ownerId) return;
     loadRoomOnce().catch(console.error);
-  }, [editable, ownerId, reloadToken]);
+  }, [canEditItems, ownerId, reloadToken]);
 
-  // ---- Live updates via sockets (visitor mode) ----
+  // ---- KEEP your old "room:update" watcher for items (optional/backcompat) ----
   useEffect(() => {
     if (!socket) return;
-    if (editable) return;
+    if (canEditItems) return;
     if (!ownerId) return;
 
     socket.emit("room:watch", { ownerId });
@@ -249,7 +277,6 @@ export default function RoomCanvas({
     const onRoomUpdate = (payload) => {
       if (!payload || String(payload.ownerId) !== String(ownerId)) return;
 
-      // only overwrite items if provided (your current server sometimes sends full room)
       if (payload.placedItems) {
         worldRef.current.items = (payload.placedItems || []).map((p) => ({
           id: p.instanceId,
@@ -260,10 +287,20 @@ export default function RoomCanvas({
         }));
       }
 
+      // if server still sends owner beaver this way, merge it into players map
       if (payload.beaver) {
-        worldRef.current.beaver.x = payload.beaver.x ?? worldRef.current.beaver.x;
-        worldRef.current.beaver.y = payload.beaver.y ?? worldRef.current.beaver.y;
-        worldRef.current.beaver.dir = payload.beaver.dir ?? worldRef.current.beaver.dir;
+        const uid = String(ownerId);
+        const prev = playersRef.current.get(uid) || {};
+        playersRef.current.set(uid, {
+          ...prev,
+          x: payload.beaver.x ?? prev.x,
+          y: payload.beaver.y ?? prev.y,
+          dir: payload.beaver.dir ?? prev.dir,
+          speed: prev.speed ?? 220,
+          frameIndex: prev.frameIndex ?? 0,
+          frameTimer: prev.frameTimer ?? 0,
+          isMoving: prev.isMoving ?? false,
+        });
       }
     };
 
@@ -273,16 +310,83 @@ export default function RoomCanvas({
       socket.emit("room:unwatch", { ownerId });
       socket.off("room:update", onRoomUpdate);
     };
-  }, [socket, editable, ownerId]);
+  }, [socket, canEditItems, ownerId]);
+
+  // ---- NEW: presence multiplayer join + handlers ----
+  useEffect(() => {
+    if (!socket) return;
+    if (!viewerId) return;
+    if (!roomId) return;
+
+    socket.emit("presence:join", { roomId: String(roomId) });
+
+    const onState = ({ roomId: rid, users }) => {
+      if (String(rid) !== String(roomId)) return;
+
+      const next = new Map(playersRef.current);
+      for (const [uid, pose] of Object.entries(users || {})) {
+        const prev = next.get(uid) || {};
+        next.set(uid, {
+          ...prev,
+          x: pose?.x ?? prev.x ?? 525,
+          y: pose?.y ?? prev.y ?? 510,
+          dir: pose?.dir ?? prev.dir ?? "down",
+          speed: prev.speed ?? 220,
+          frameIndex: prev.frameIndex ?? 0,
+          frameTimer: prev.frameTimer ?? 0,
+          isMoving: prev.isMoving ?? false,
+        });
+      }
+      playersRef.current = next;
+    };
+
+    const onMoved = ({ roomId: rid, userId, x, y, dir }) => {
+      if (String(rid) !== String(roomId)) return;
+      const uid = String(userId);
+      const next = new Map(playersRef.current);
+      const prev = next.get(uid) || {};
+      next.set(uid, {
+        ...prev,
+        x: x ?? prev.x,
+        y: y ?? prev.y,
+        dir: dir ?? prev.dir,
+        speed: prev.speed ?? 220,
+        frameIndex: prev.frameIndex ?? 0,
+        frameTimer: prev.frameTimer ?? 0,
+        isMoving: prev.isMoving ?? false,
+      });
+      playersRef.current = next;
+    };
+
+    const onLeft = ({ roomId: rid, userId }) => {
+      if (String(rid) !== String(roomId)) return;
+      const uid = String(userId);
+      const next = new Map(playersRef.current);
+      next.delete(uid);
+      playersRef.current = next;
+    };
+
+    socket.on("presence:state", onState);
+    socket.on("presence:moved", onMoved);
+    socket.on("presence:left", onLeft);
+
+    return () => {
+      socket.off("presence:state", onState);
+      socket.off("presence:moved", onMoved);
+      socket.off("presence:left", onLeft);
+      // optional:
+      // socket.emit("presence:leave", { roomId: String(roomId) });
+    };
+  }, [socket, viewerId, roomId]);
 
   // selected item callback (optional)
   useEffect(() => {
     onSelectedChange?.(selectedItemId);
   }, [selectedItemId, onSelectedChange]);
 
-  // Keyboard (owner only)
+  // Keyboard (movement for owner + visitors; item scaling only for owner)
   useEffect(() => {
-    if (!editable) return;
+    if (!canMove) return;
 
     const down = (e) => {
       if (e.repeat) return;
@@ -292,6 +396,9 @@ export default function RoomCanvas({
       if (k === "a") keysRef.current.a = true;
       if (k === "s") keysRef.current.s = true;
       if (k === "d") keysRef.current.d = true;
+
+      // item scaling only for owner
+      if (!canEditItems) return;
 
       if (e.key === "ArrowUp") {
         e.preventDefault();
@@ -310,6 +417,8 @@ export default function RoomCanvas({
       if (k === "s") keysRef.current.s = false;
       if (k === "d") keysRef.current.d = false;
 
+      if (!canEditItems) return;
+
       if (e.key === "ArrowUp") {
         e.preventDefault();
         keysRef.current.up = false;
@@ -327,7 +436,7 @@ export default function RoomCanvas({
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
     };
-  }, [editable]);
+  }, [canMove, canEditItems]);
 
   // Pointer events (owner only)
   useEffect(() => {
@@ -340,7 +449,7 @@ export default function RoomCanvas({
     };
 
     const onDown = (e) => {
-      if (!editable) return;
+      if (!canEditItems) return;
       canvas.setPointerCapture?.(e.pointerId);
 
       const { sx, sy } = getPointer(e);
@@ -369,7 +478,7 @@ export default function RoomCanvas({
     };
 
     const onMove = (e) => {
-      if (!editable) return;
+      if (!canEditItems) return;
 
       const draggingId = dragRef.current.draggingId;
       if (!draggingId) return;
@@ -385,7 +494,7 @@ export default function RoomCanvas({
     };
 
     const onUp = async () => {
-      if (!editable) return;
+      if (!canEditItems) return;
 
       const id = dragRef.current.draggingId;
       dragRef.current.draggingId = null;
@@ -398,7 +507,7 @@ export default function RoomCanvas({
     };
 
     const onWheel = (e) => {
-      if (!editable) return;
+      if (!canEditItems) return;
       if (!selectedItemId) return;
 
       e.preventDefault();
@@ -424,7 +533,7 @@ export default function RoomCanvas({
       canvas.removeEventListener("pointercancel", onUp);
       canvas.removeEventListener("wheel", onWheel);
     };
-  }, [editable, assetsRef, catalogByKey, selectedItemId]);
+  }, [canEditItems, assetsRef, catalogByKey, selectedItemId]);
 
   // Render loop
   useEffect(() => {
@@ -439,17 +548,19 @@ export default function RoomCanvas({
       lastT = t;
 
       updateViewTransform();
-      if (editable) update(dt);
+      if (canMove) update(dt);
       render();
     };
 
     const update = (dt) => {
       const w = worldRef.current;
-      const b = w.beaver;
+      const me = getMyBeaver();
+      if (!me) return;
+
       const keys = keysRef.current;
 
-      // ---- ArrowUp/ArrowDown scale selected item ----
-      if (selectedItemId && (keys.up || keys.down)) {
+      // ---- ArrowUp/ArrowDown scale selected item (owner only) ----
+      if (canEditItems && selectedItemId && (keys.up || keys.down)) {
         const item = w.items.find((it) => it.id === selectedItemId);
         if (item) {
           const scaleSpeed = 1.4;
@@ -460,7 +571,7 @@ export default function RoomCanvas({
         }
       }
 
-      // ---- WASD movement ----
+      // ---- WASD movement (everyone) ----
       let vx = 0,
         vy = 0;
       if (keys.w) vy -= 1;
@@ -469,7 +580,7 @@ export default function RoomCanvas({
       if (keys.d) vx += 1;
 
       const moving = vx !== 0 || vy !== 0;
-      b.isMoving = moving;
+      me.isMoving = moving;
 
       if (moving) {
         persistRef.current.sentStop = false;
@@ -478,33 +589,35 @@ export default function RoomCanvas({
         vx /= mag;
         vy /= mag;
 
-        if (Math.abs(vx) > Math.abs(vy)) b.dir = vx > 0 ? "right" : "left";
-        else b.dir = vy > 0 ? "down" : "up";
+        if (Math.abs(vx) > Math.abs(vy)) me.dir = vx > 0 ? "right" : "left";
+        else me.dir = vy > 0 ? "down" : "up";
 
-        // move X first
-        b.x = clamp(b.x + vx * b.speed * dt, 0, ROOM_W);
+        me.x = clamp(me.x + vx * me.speed * dt, 0, ROOM_W);
 
-        // clamp Y against the V-shaped seam
-        const topY = floorTopY(b.x) + FLOOR_MARGIN;
-        b.y = clamp(b.y + vy * b.speed * dt, topY, ROOM_H);
+        const topY = floorTopY(me.x) + FLOOR_MARGIN;
+        me.y = clamp(me.y + vy * me.speed * dt, topY, ROOM_H);
 
-        b.frameIndex = 0;
-        b.frameTimer = 0;
+        me.frameIndex = 0;
+        me.frameTimer = 0;
       } else {
-        b.frameIndex = 0;
-        b.frameTimer = 0;
+        me.frameIndex = 0;
+        me.frameTimer = 0;
       }
 
+      // Keep our Map updated (in case getMyBeaver returned object not referenced)
+      playersRef.current.set(String(viewerId), me);
+
       // -------------------------
-      // NEW: socket broadcast (owner -> visitors), throttled
+      // NEW: presence broadcast (everyone), throttled
       // -------------------------
-      if (editable && socket) {
+      if (socket && roomId && viewerId) {
         const now = performance.now();
         const SEND_EVERY_MS = 1000 / 15; // ~15 Hz max
-        const POS_EPS = 1.5; // pixels
-        const nx = b.x,
-          ny = b.y,
-          nd = b.dir;
+        const POS_EPS = 1.5;
+
+        const nx = me.x,
+          ny = me.y,
+          nd = me.dir;
 
         const movedEnough =
           netRef.current.lastX == null ||
@@ -517,26 +630,25 @@ export default function RoomCanvas({
           netRef.current.lastY = ny;
           netRef.current.lastDir = nd;
 
-          socket.emit("room:beaver", { x: nx, y: ny, dir: nd });
+          socket.emit("presence:move", { roomId: String(roomId), x: nx, y: ny, dir: nd });
         }
       }
 
       // -------------------------
-      // NEW: persist to Mongo occasionally (owner only)
+      // Persist owner beaver to Mongo occasionally (owner only)
       // -------------------------
-      if (editable) {
+      if (canEditItems) {
         if (moving) {
           persistRef.current.t += dt;
           if (persistRef.current.t >= 0.5) {
             persistRef.current.t = 0;
-            patch("/api/room/beaver", { x: b.x, y: b.y, dir: b.dir }).catch(console.error);
+            patch("/api/room/beaver", { x: me.x, y: me.y, dir: me.dir }).catch(console.error);
           }
         } else {
-          // send one "final" save when stopping so reloads spawn at last spot
           if (!persistRef.current.sentStop) {
             persistRef.current.sentStop = true;
             persistRef.current.t = 0;
-            patch("/api/room/beaver", { x: b.x, y: b.y, dir: b.dir }).catch(console.error);
+            patch("/api/room/beaver", { x: me.x, y: me.y, dir: me.dir }).catch(console.error);
           }
         }
       }
@@ -571,10 +683,17 @@ export default function RoomCanvas({
         ctx.stroke();
       }
 
-      const { items, beaver } = worldRef.current;
+      const items = worldRef.current.items;
+
+      // drawables: items + all beavers, sorted by feet y
+      const beavers = Array.from(playersRef.current.entries()).map(([uid, b]) => ({
+        uid,
+        b,
+      }));
+
       const drawables = [
         ...items.map((it) => ({ type: "item", y: it.y, it })),
-        { type: "beaver", y: beaver.y, it: beaver },
+        ...beavers.map(({ uid, b }) => ({ type: "beaver", y: b.y, uid, it: b })),
       ].sort((a, b) => a.y - b.y);
 
       for (const d of drawables) {
@@ -591,12 +710,15 @@ export default function RoomCanvas({
 
           ctx.drawImage(img, x - wpx / 2, y - hpx, wpx, hpx);
 
-          if (editable && it.id === selectedItemId) {
+          if (canEditItems && it.id === selectedItemId) {
             ctx.strokeStyle = "rgba(0,0,0,0.35)";
             ctx.strokeRect(x - wpx / 2, y - hpx, wpx, hpx);
           }
         } else {
           const b = d.it;
+          const uid = String(d.uid);
+          const isSelf = viewerId && uid === String(viewerId);
+
           const sheet = imgs.beaverSheet;
           if (!sheet) continue;
 
@@ -607,15 +729,31 @@ export default function RoomCanvas({
           const dw = sw * spriteScale;
           const dh = sh * spriteScale;
 
+          ctx.save();
+          if (!isSelf) ctx.globalAlpha = 0.92;
+
           // y is feet position (anchor)
           ctx.drawImage(sheet, sx, sy, sw, sh, x - dw / 2, y - dh, dw, dh);
+
+          ctx.restore();
         }
       }
     };
 
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [assetsReady, dpr, editable, assetsRef, catalogByKey, selectedItemId, socket]);
+  }, [
+    assetsReady,
+    dpr,
+    canMove,
+    canEditItems,
+    assetsRef,
+    catalogByKey,
+    selectedItemId,
+    socket,
+    roomId,
+    viewerId,
+  ]);
 
   return (
     <div ref={containerRef} style={{ flex: 1, position: "relative", overflow: "hidden" }}>
