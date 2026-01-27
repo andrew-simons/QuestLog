@@ -523,9 +523,14 @@ router.post("/shop/buy", async (req, res) => {
     if (!user) return res.status(404).send({ error: "User not found" });
 
     const inv = await Inventory.findOne({ userId: user._id, itemKey }).lean();
-    const qtyOwned = inv ? inv.qty : 0;
+    const invQty = inv ? inv.qty : 0;
 
-    if (qtyOwned >= (item.maxOwned ?? 1)) {
+    const room = await Room.findOne({ userId: user._id }).lean();
+    const placedQty = (room?.placedItems || []).filter((p) => p.itemKey === itemKey).length;
+
+    const totalOwned = invQty + placedQty;
+
+    if (totalOwned >= (item.maxOwned ?? 1)) {
       return res.status(400).send({ error: "Already owned max quantity" });
     }
 

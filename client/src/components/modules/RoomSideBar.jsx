@@ -1,15 +1,17 @@
 import React, { useMemo, useState } from "react";
+import "./RoomSidebar.css";
 
 export default function RoomSidebar({
   coins,
   catalog,
   inventory,
+  placedCounts,
   selectedItemId,
   onBuy,
   onPlace,
   onRemoveSelected,
 }) {
-  const [tab, setTab] = useState("inventory"); // inventory | shop
+  const [tab, setTab] = useState("inventory");
 
   const catalogByKey = useMemo(() => {
     const m = new Map();
@@ -19,114 +21,125 @@ export default function RoomSidebar({
 
   const ownedQty = (itemKey) => inventory.find((r) => r.itemKey === itemKey)?.qty || 0;
 
-  return (
-    <div style={{ width: 280, borderLeft: "1px solid #ddd", padding: 12 }}>
-      <div style={{ marginBottom: 12 }}>
-        <h3 style={{ marginTop: 0, marginBottom: 8 }}>Your Beaver</h3>
+  const resolveItemImage = (it) => {
+    if (!it) return null;
+    if (it.imageUrl) return it.imageUrl;
+    if (it.imageKey) return `/img/items/${it.imageKey}.png`;
+    return `/img/items/${it.key}.png`;
+  };
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ fontSize: 13 }}>
-            <b>{coins}</b> coins
+  return (
+    <aside className="qs-shell">
+      <div className="qs-header">
+        <div className="qs-header-top">
+          <div>
+            <h3 className="qs-title">Your Beaver</h3>
+          </div>
+
+          <div className="qs-coin-pill">
+            <span className="qs-coin-dot" />
+            <b>{coins}</b>
+            <span>coins</span>
+          </div>
+        </div>
+
+        <div className="qs-meta">
+          <div className="qs-selected">
+            <span className="qs-selected-label">Selected</span>
+            <span className="qs-selected-value">{selectedItemId || "None"}</span>
           </div>
 
           <button
+            className={`qs-remove ${selectedItemId ? "on" : "off"}`}
             disabled={!selectedItemId}
             onClick={onRemoveSelected}
-            style={{
-              padding: "6px 10px",
-              border: "1px solid #ddd",
-              borderRadius: 8,
-              background: selectedItemId ? "#fff" : "#f5f5f5",
-              cursor: selectedItemId ? "pointer" : "not-allowed",
-              fontSize: 12,
-            }}
-            title={selectedItemId ? "Remove selected item from room" : "Select an item to remove"}
           >
             Remove
           </button>
         </div>
-
-        <div style={{ marginTop: 8, fontSize: 12, opacity: 0.75 }}>
-          <b>Selected:</b> {selectedItemId || "None"}
-        </div>
       </div>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-        <button onClick={() => setTab("inventory")} disabled={tab === "inventory"}>
+      <div className="qs-tabs">
+        <button
+          className={`qs-tab ${tab === "inventory" ? "active" : ""}`}
+          onClick={() => setTab("inventory")}
+        >
           Inventory
         </button>
-        <button onClick={() => setTab("shop")} disabled={tab === "shop"}>
+        <button
+          className={`qs-tab ${tab === "shop" ? "active" : ""}`}
+          onClick={() => setTab("shop")}
+        >
           Shop
         </button>
+        <div className="qs-tab-indicator" style={{ left: tab === "inventory" ? "6px" : "50%" }} />
       </div>
 
-      {tab === "inventory" ? (
-        <InventoryPanel inventory={inventory} catalogByKey={catalogByKey} onPlace={onPlace} />
-      ) : (
-        <ShopPanel catalog={catalog} coins={coins} ownedQty={ownedQty} onBuy={onBuy} />
-      )}
-    </div>
+      <div className="qs-panel">
+        {tab === "inventory" ? (
+          inventory.length === 0 ? (
+            <div className="qs-empty">No items owned yet.</div>
+          ) : (
+            inventory.map((row) => {
+              const def = catalogByKey.get(row.itemKey);
+              return (
+                <ItemCard
+                  key={row.itemKey}
+                  name={def?.name ?? row.itemKey}
+                  img={resolveItemImage(def || row)}
+                  sub={`${row.qty} available`}
+                  actionLabel="Place"
+                  disabled={row.qty <= 0}
+                  onAction={() => onPlace(row.itemKey)}
+                />
+              );
+            })
+          )
+        ) : (
+          catalog.map((it) => {
+            const invOwned = ownedQty(it.key);
+            const placedOwned = placedCounts?.get(it.key) || 0;
+            const ownedTotal = invOwned + placedOwned;
+
+            const max = it.maxOwned ?? 1;
+            const canAfford = coins >= it.priceCoins;
+            const disabled = ownedTotal >= max || !canAfford;
+
+            return (
+              <ItemCard
+                key={it.key}
+                name={it.name}
+                img={resolveItemImage(it)}
+                sub={`${it.priceCoins} coins · ${ownedTotal}/${max}`}
+                actionLabel="Buy"
+                disabled={disabled}
+                onAction={() => onBuy(it.key)}
+              />
+            );
+          })
+        )}
+      </div>
+    </aside>
   );
 }
 
-function InventoryPanel({ inventory, catalogByKey, onPlace }) {
-  if (!inventory.length) return <div style={{ opacity: 0.8 }}>No items owned yet.</div>;
-
+function ItemCard({ name, img, sub, actionLabel, disabled, onAction }) {
   return (
-    <div>
-      {inventory.map((row) => {
-        const def = catalogByKey.get(row.itemKey);
-        return (
-          <div
-            key={row.itemKey}
-            style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}
-          >
-            <div style={{ flex: 1 }}>
-              <div>
-                <b>{def?.name ?? row.itemKey}</b>
-              </div>
-              <div style={{ fontSize: 12, opacity: 0.75 }}>qty: {row.qty}</div>
-            </div>
-            <button disabled={row.qty <= 0} onClick={() => onPlace(row.itemKey)}>
-              Place
-            </button>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+    <div className="qs-item">
+      <div className="qs-thumb">{img ? <img src={img} alt={name} /> : <span>🪵</span>}</div>
 
-function ShopPanel({ catalog, coins, ownedQty, onBuy }) {
-  if (!catalog.length) return <div style={{ opacity: 0.8 }}>Loading shop...</div>;
+      <div className="qs-item-main">
+        <div className="qs-item-name">{name}</div>
+        <div className="qs-item-sub">{sub}</div>
+      </div>
 
-  return (
-    <div>
-      {catalog.map((it) => {
-        const owned = ownedQty(it.key);
-        const maxed = owned >= (it.maxOwned ?? 1);
-        const canAfford = coins >= (it.priceCoins ?? 0);
-
-        return (
-          <div
-            key={it.key}
-            style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}
-          >
-            <div style={{ flex: 1 }}>
-              <div>
-                <b>{it.name}</b>
-              </div>
-              <div style={{ fontSize: 12, opacity: 0.75 }}>
-                {it.priceCoins} coins · owned {owned}/{it.maxOwned ?? 1}
-              </div>
-            </div>
-
-            <button disabled={maxed || !canAfford} onClick={() => onBuy(it.key)}>
-              Buy
-            </button>
-          </div>
-        );
-      })}
+      <button
+        className={`qs-primary ${disabled ? "off" : "on"}`}
+        disabled={disabled}
+        onClick={onAction}
+      >
+        {actionLabel}
+      </button>
     </div>
   );
 }

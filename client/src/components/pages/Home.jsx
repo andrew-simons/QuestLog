@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { get, post, del } from "../../utilities";
 import RoomCanvas from "../modules/RoomCanvas";
-import { socket } from "../../client-socket"; // whatever your socket import is
+import { socket } from "../../client-socket";
 import RoomSidebar from "../modules/RoomSideBar";
 
 export default function Home() {
@@ -12,6 +12,7 @@ export default function Home() {
   const [inventory, setInventory] = useState([]);
 
   const [viewerId, setViewerId] = useState(null);
+  const [placedCounts, setPlacedCounts] = useState(new Map());
 
   const [reloadToken, setReloadToken] = useState(0);
 
@@ -23,15 +24,29 @@ export default function Home() {
 
   const ownedQty = (itemKey) => inventory.find((r) => r.itemKey === itemKey)?.qty || 0;
 
+  // NEW: recompute how many of each itemKey is currently placed in the room
+  async function refreshPlacedCounts() {
+    const room = await get("/api/room"); // owner room
+    const m = new Map();
+    for (const p of room?.placedItems || []) {
+      m.set(p.itemKey, (m.get(p.itemKey) || 0) + 1);
+    }
+    setPlacedCounts(m);
+  }
+
   useEffect(() => {
     async function load() {
       const me = await get("/api/whoami");
       if (!me?._id) return;
+
       setViewerId(me._id);
       setCoins(me.coins ?? 0);
+
       const [items, inv] = await Promise.all([get("/api/items"), get("/api/inventory")]);
       setCatalog(items || []);
       setInventory(inv || []);
+
+      await refreshPlacedCounts();
     }
     load().catch(console.error);
   }, []);
@@ -48,6 +63,9 @@ export default function Home() {
       else copy.push({ itemKey, qty: resp.qty });
       return copy;
     });
+
+    // optional: not strictly needed for buy, but harmless
+    // await refreshPlacedCounts();
   }
 
   async function placeItem(itemKey) {
@@ -71,11 +89,9 @@ export default function Home() {
       if (idx >= 0) next[idx] = { ...next[idx], qty: resp.inventoryQty };
       return next;
     });
-    setReloadToken((t) => t + 1);
 
-    // NOTE: you don't manually push into worldRef anymore.
-    // The server can broadcast "room:update" and RoomCanvas can reload or apply update.
-    // Easiest: server broadcasts the whole room state after place/remove/move.
+    setReloadToken((t) => t + 1);
+    await refreshPlacedCounts();
   }
 
   async function removeSelected() {
@@ -92,7 +108,9 @@ export default function Home() {
       else next.push({ itemKey: resp.itemKey, qty: resp.inventoryQty });
       return next;
     });
+
     setReloadToken((t) => t + 1);
+    await refreshPlacedCounts();
   }
 
   return (
@@ -112,6 +130,7 @@ export default function Home() {
         coins={coins}
         catalog={catalog}
         inventory={inventory}
+        placedCounts={placedCounts}   // NEW
         selectedItemId={selectedItemId}
         onBuy={buyItem}
         onPlace={placeItem}
