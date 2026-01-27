@@ -9,8 +9,7 @@
   /* warmer background + subtle texture-ish gradient */
   background:
     radial-gradient(1200px 600px at 20% 10%, rgba(240, 140, 60, 0.18), transparent 60%),
-    radial-gradient(900px 500px at 90% 80%, rgba(0, 0, 0, 0.06), transparent 55%),
-    #fdf1e7;
+    radial-gradient(900px 500px at 90% 80%, rgba(0, 0, 0, 0.06), transparent 55%), #fdf1e7;
 }
 
 /* ---------- Card ---------- */
@@ -93,11 +92,21 @@
 }
 
 @keyframes beaverHover {
-  0%   { transform: scale(1.04) rotate(0deg); }
-  25%  { transform: scale(1.04) rotate(2deg); }
-  50%  { transform: scale(1.04) rotate(0deg); }
-  75%  { transform: scale(1.04) rotate(-2deg); }
-  100% { transform: scale(1.04) rotate(0deg); }
+  0% {
+    transform: scale(1.04) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.04) rotate(2deg);
+  }
+  50% {
+    transform: scale(1.04) rotate(0deg);
+  }
+  75% {
+    transform: scale(1.04) rotate(-2deg);
+  }
+  100% {
+    transform: scale(1.04) rotate(0deg);
+  }
 }
 
 /* ---------- Text ---------- */
@@ -142,7 +151,9 @@
   background: rgba(255, 255, 255, 0.9);
 
   box-shadow: 0 6px 0 rgba(0, 0, 0, 0.12);
-  transition: transform 140ms ease, box-shadow 140ms ease;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease;
 }
 
 .google-frame:hover {
@@ -167,4 +178,38 @@
   /* GoogleLogin renders a div wrapper */
   transform: scale(1.02);
   transform-origin: center;
+}
+.quest-login-btn {
+  font-family: inherit;
+  font-size: 16px;
+  padding: 12px 18px;
+  border-radius: 14px;
+
+  border: 2px solid rgba(0, 0, 0, 0.7);
+  background: #f08c3c;
+  color: #1a1a1a;
+
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.16);
+  cursor: pointer;
+
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    filter 140ms ease;
+}
+
+.quest-login-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.16);
+  filter: brightness(1.03);
+}
+
+.quest-login-btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.16);
+}
+
+.quest-login-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
