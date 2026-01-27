@@ -1,40 +1,170 @@
+/* ---------- Page container ---------- */
 .login-container {
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #fdf1e7; /* need to work on this */
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 18px;
   font-family: "Comic Sans MS", "Arial Rounded MT Bold", sans-serif;
+
+  /* warmer background + subtle texture-ish gradient */
+  background:
+    radial-gradient(1200px 600px at 20% 10%, rgba(240, 140, 60, 0.18), transparent 60%),
+    radial-gradient(900px 500px at 90% 80%, rgba(0, 0, 0, 0.06), transparent 55%),
+    #fdf1e7;
 }
 
+/* ---------- Card ---------- */
 .login-card {
+  width: min(460px, 92vw);
   text-align: center;
-  padding: 40px 60px;
+  padding: 34px 34px 28px;
+
   border: 3px solid #f08c3c;
-  border-radius: 16px;
-  background-color: #fff7ef;
+  border-radius: 18px;
+  background: #fff7ef;
+
+  /* nicer depth */
+  box-shadow: 0 14px 0 rgba(0, 0, 0, 0.12);
+  position: relative;
 }
 
+/* little “handmade” corner tape vibe */
+.login-card::before,
+.login-card::after {
+  content: "";
+  position: absolute;
+  width: 78px;
+  height: 22px;
+  background: rgba(240, 140, 60, 0.22);
+  border: 2px solid rgba(0, 0, 0, 0.18);
+  border-radius: 8px;
+  top: -12px;
+}
+.login-card::before {
+  left: 18px;
+  transform: rotate(-6deg);
+}
+.login-card::after {
+  right: 18px;
+  transform: rotate(6deg);
+}
+
+/* ---------- Beaver wrapper ---------- */
+.beaver-wrap {
+  display: grid;
+  place-items: center;
+  margin-bottom: 6px;
+}
+
+/* ---------- Beaver mascot ---------- */
 .beaver-img {
-  width: 140px;
-  margin-bottom: 10px;
+  width: 148px;
+  height: 148px;
+  object-fit: contain;
+
+  user-select: none;
+  pointer-events: auto;
+  transform-origin: 50% 70%;
+  will-change: transform, opacity;
+
+  /* soft shadow so it pops */
+  filter: drop-shadow(0 6px 0 rgba(0, 0, 0, 0.12));
 }
 
+.beaver-swap {
+  animation: beaverIn 600ms ease-out both;
+}
+
+@keyframes beaverIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96) rotate(-2deg);
+    filter: drop-shadow(0 6px 0 rgba(0, 0, 0, 0.12)) blur(0.4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+    filter: drop-shadow(0 6px 0 rgba(0, 0, 0, 0.12));
+  }
+}
+
+.beaver-img:hover {
+  animation: beaverHover 650ms ease-in-out infinite;
+}
+
+@keyframes beaverHover {
+  0%   { transform: scale(1.04) rotate(0deg); }
+  25%  { transform: scale(1.04) rotate(2deg); }
+  50%  { transform: scale(1.04) rotate(0deg); }
+  75%  { transform: scale(1.04) rotate(-2deg); }
+  100% { transform: scale(1.04) rotate(0deg); }
+}
+
+/* ---------- Text ---------- */
 .title {
-  font-size: 36px;
-  margin: 8px 0;
+  font-size: 42px;
+  margin: 8px 0 2px;
   letter-spacing: 2px;
+  text-transform: uppercase;
+
+  /* tiny outline to feel “drawn” */
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.12);
 }
 
 .subtitle {
   font-size: 16px;
-  margin-bottom: 24px;
+  margin: 0 0 18px;
+  opacity: 0.85;
 }
 
-.login-button {
-  display: inline-block;
-  padding: 8px 16px;
-  border: 2px solid black;
-  border-radius: 6px;
-  background-color: white;
+/* ---------- Sign in block ---------- */
+.signin-block {
+  margin-top: 10px;
+  padding-top: 14px;
+  border-top: 2px dashed rgba(0, 0, 0, 0.18);
+}
+
+.signin-label {
+  font-size: 14px;
+  margin-bottom: 10px;
+  opacity: 0.85;
+}
+
+/* “Frame” around Google’s official button so it fits your theme */
+.google-frame {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 12px;
+  border: 2px solid rgba(0, 0, 0, 0.65);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.12);
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+.google-frame:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.12);
+}
+
+.google-frame:active {
+  transform: translateY(1px);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.12);
+}
+
+/* optional fineprint */
+.fineprint {
+  margin-top: 12px;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+/* --- try to reduce the Google button “boxy” feel without breaking it --- */
+.google-frame > div {
+  /* GoogleLogin renders a div wrapper */
+  transform: scale(1.02);
+  transform-origin: center;
 }
