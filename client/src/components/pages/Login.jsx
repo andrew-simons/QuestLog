@@ -10,21 +10,23 @@ const Login = () => {
   const { userId, handleLogin, handleLogout } = useContext(UserContext);
 
   return (
-    <>
-      <h1>Login Page</h1>
-      {userId ? (
-        <button className="NavBar-link NavBar-login u-inlineBlock" onClick={handleLogout}>
-          Sign out
-        </button>
-      ) : (
-        <GoogleLogin
-          text="signin_with"
-          onSuccess={handleLogin}
-          onFailure={(err) => console.log(err)}
-          containerProps={{ className: "NavBar-link NavBar-login u-inlineBlock" }}
-        />
-      )}
-    </>
+    <div className="loginContainer">
+      <div className="loginContent">
+        <h1 className="u-textCenter">Login Page</h1>
+        {userId ? (
+          <button className="NavBar-link NavBar-login u-inlineBlock" onClick={handleLogout}>
+            Sign out
+          </button>
+        ) : (
+          <GoogleLogin
+            text="signin_with"
+            onSuccess={handleLogin}
+            onFailure={(err) => console.log(err)}
+            containerProps={{ className: "NavBar-link NavBar-login u-inlineBlock" }}
+          />
+        )}
+      </div>
+    </div>
   );
 };
 
