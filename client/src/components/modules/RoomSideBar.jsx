@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import "./RoomSidebar.css";
 
 export default function RoomSidebar({
@@ -7,17 +7,37 @@ export default function RoomSidebar({
   inventory,
   placedCounts,
   selectedItemId,
+  selectedItemKey,
+  roomOwnerName,
+  isOwner,
+  onSaveMyName,
   onBuy,
   onPlace,
   onRemoveSelected,
+  setTyping,
 }) {
   const [tab, setTab] = useState("inventory");
+
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+
+  useEffect(() => {
+    // whenever you enter a room (or owner changes), reset draft
+    setNameDraft(roomOwnerName || "");
+    setEditingName(false);
+  }, [roomOwnerName]);
 
   const catalogByKey = useMemo(() => {
     const m = new Map();
     for (const it of catalog) m.set(it.key, it);
     return m;
   }, [catalog]);
+
+  const selectedLabel = useMemo(() => {
+    if (!selectedItemKey) return "None";
+    const def = catalogByKey.get(selectedItemKey);
+    return def?.name ?? selectedItemKey;
+  }, [selectedItemKey, catalogByKey]);
 
   const ownedQty = (itemKey) => inventory.find((r) => r.itemKey === itemKey)?.qty || 0;
 
@@ -28,12 +48,64 @@ export default function RoomSidebar({
     return `/img/items/${it.key}.png`;
   };
 
+  async function commitName() {
+    const trimmed = nameDraft.trim();
+    if (!trimmed) return;
+    await onSaveMyName(trimmed);
+    setEditingName(false);
+  }
+
   return (
     <aside className="qs-shell">
       <div className="qs-header">
         <div className="qs-header-top">
-          <div>
-            <h3 className="qs-title">Your Beaver</h3>
+          <div className="qs-titleStack">
+            <div className="qs-titleRow">
+              <h3 className="qs-title">
+                {roomOwnerName ? `${roomOwnerName}'s Room` : "Your Room"}
+              </h3>
+
+              {isOwner && !editingName && (
+                <button className="qs-editbtn" onClick={() => setEditingName(true)}>
+                  Edit
+                </button>
+              )}
+            </div>
+
+            {isOwner && editingName && (
+              <div className="qs-name-edit">
+                <input
+                  className="qs-name-input"
+                  value={nameDraft}
+                  maxLength={20}
+                  placeholder="Your Name"
+                  onFocus={() => setTyping?.(true)}
+                  onBlur={() => setTyping?.(false)}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === "Enter") commitName();
+                    if (e.key === "Escape") {
+                      setNameDraft(roomOwnerName || "");
+                      setEditingName(false);
+                    }
+                  }}
+                />
+
+                <button className="qs-savebtn" onClick={commitName}>
+                  Save
+                </button>
+                <button
+                  className="qs-cancelbtn"
+                  onClick={() => {
+                    setNameDraft(roomOwnerName || "");
+                    setEditingName(false);
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="qs-coin-pill">
@@ -46,13 +118,14 @@ export default function RoomSidebar({
         <div className="qs-meta">
           <div className="qs-selected">
             <span className="qs-selected-label">Selected</span>
-            <span className="qs-selected-value">{selectedItemId || "None"}</span>
+            <span className="qs-selected-value">{selectedLabel}</span>
           </div>
 
           <button
             className={`qs-remove ${selectedItemId ? "on" : "off"}`}
-            disabled={!selectedItemId}
+            disabled={!selectedItemId || !isOwner}
             onClick={onRemoveSelected}
+            title={!isOwner ? "You can’t remove items in someone else’s room." : ""}
           >
             Remove
           </button>
@@ -82,14 +155,15 @@ export default function RoomSidebar({
           ) : (
             inventory.map((row) => {
               const def = catalogByKey.get(row.itemKey);
+              const disabled = row.qty <= 0 || !isOwner; // only place in your own room
               return (
                 <ItemCard
                   key={row.itemKey}
                   name={def?.name ?? row.itemKey}
                   img={resolveItemImage(def || row)}
                   sub={`${row.qty} available`}
-                  actionLabel="Place"
-                  disabled={row.qty <= 0}
+                  actionLabel={isOwner ? "Place" : "View"}
+                  disabled={disabled}
                   onAction={() => onPlace(row.itemKey)}
                 />
               );
@@ -103,6 +177,8 @@ export default function RoomSidebar({
 
             const max = it.maxOwned ?? 1;
             const canAfford = coins >= it.priceCoins;
+
+            // buying is fine anywhere; placing is owner-only (handled above)
             const disabled = ownedTotal >= max || !canAfford;
 
             return (

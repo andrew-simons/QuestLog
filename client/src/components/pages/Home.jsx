@@ -5,16 +5,18 @@ import { socket } from "../../client-socket";
 import RoomSidebar from "../modules/RoomSideBar";
 
 export default function Home() {
-  const [selectedItemId, setSelectedItemId] = useState(null);
+  const [selected, setSelected] = useState(null);
 
   const [coins, setCoins] = useState(0);
   const [catalog, setCatalog] = useState([]);
   const [inventory, setInventory] = useState([]);
 
-  const [viewerId, setViewerId] = useState(null);
-  const [placedCounts, setPlacedCounts] = useState(new Map());
+  const [viewer, setViewer] = useState(null); // whoami
+  const [roomOwner, setRoomOwner] = useState(null); // same as viewer on Home
 
+  const [placedCounts, setPlacedCounts] = useState(new Map());
   const [reloadToken, setReloadToken] = useState(0);
+  const [isTyping, setIsTyping] = useState(false);
 
   const catalogByKey = useMemo(() => {
     const m = new Map();
@@ -24,14 +26,18 @@ export default function Home() {
 
   const ownedQty = (itemKey) => inventory.find((r) => r.itemKey === itemKey)?.qty || 0;
 
-  // NEW: recompute how many of each itemKey is currently placed in the room
+  const isOwner = true; // Home is always your room
+
   async function refreshPlacedCounts() {
-    const room = await get("/api/room"); // owner room
+    const room = await get("/api/room");
     const m = new Map();
     for (const p of room?.placedItems || []) {
       m.set(p.itemKey, (m.get(p.itemKey) || 0) + 1);
     }
     setPlacedCounts(m);
+
+    // if your backend returns { owner }, use that. Otherwise fallback to viewer.
+    if (room?.owner) setRoomOwner(room.owner);
   }
 
   useEffect(() => {
@@ -39,8 +45,9 @@ export default function Home() {
       const me = await get("/api/whoami");
       if (!me?._id) return;
 
-      setViewerId(me._id);
+      setViewer(me);
       setCoins(me.coins ?? 0);
+      setRoomOwner({ _id: me._id, name: me.name || "You" });
 
       const [items, inv] = await Promise.all([get("/api/items"), get("/api/inventory")]);
       setCatalog(items || []);
@@ -50,6 +57,15 @@ export default function Home() {
     }
     load().catch(console.error);
   }, []);
+
+  async function saveMyName(newName) {
+    const resp = await post("/api/me/name", { name: newName });
+    if (resp?.error) return console.log(resp.error);
+
+    // keep header correct + keep whoami-ish state consistent
+    setViewer((v) => (v ? { ...v, name: resp.name } : v));
+    setRoomOwner((o) => (o ? { ...o, name: resp.name } : o));
+  }
 
   async function buyItem(itemKey) {
     const resp = await post("/api/shop/buy", { itemKey });
@@ -63,9 +79,6 @@ export default function Home() {
       else copy.push({ itemKey, qty: resp.qty });
       return copy;
     });
-
-    // optional: not strictly needed for buy, but harmless
-    // await refreshPlacedCounts();
   }
 
   async function placeItem(itemKey) {
@@ -95,12 +108,13 @@ export default function Home() {
   }
 
   async function removeSelected() {
-    if (!selectedItemId) return;
+    if (!selected?.id) return;
 
-    const resp = await del(`/api/room/remove/${selectedItemId}`);
+    const resp = await del(`/api/room/remove/${selected.id}`);
     if (resp?.error) return console.log(resp.error);
 
-    setSelectedItemId(null);
+    setSelected(null);
+
     setInventory((prev) => {
       const next = [...prev];
       const idx = next.findIndex((r) => r.itemKey === resp.itemKey);
@@ -117,24 +131,30 @@ export default function Home() {
     <div style={{ display: "flex", height: "100vh" }}>
       <RoomCanvas
         mode="owner"
-        viewerId={viewerId}
-        roomId={viewerId}
+        viewerId={viewer?._id}
+        roomId={viewer?._id}
+        ownerId={viewer?._id}
         reloadToken={reloadToken}
-        ownerId={null}
         catalogByKey={catalogByKey}
         socket={socket}
-        onSelectedChange={setSelectedItemId}
+        onSelectedChange={setSelected}
+        disableInput={isTyping}
       />
 
       <RoomSidebar
         coins={coins}
         catalog={catalog}
         inventory={inventory}
-        placedCounts={placedCounts}   // NEW
-        selectedItemId={selectedItemId}
+        placedCounts={placedCounts}
+        selectedItemId={selected?.id || null}
+        selectedItemKey={selected?.itemKey || null}
+        roomOwnerName={roomOwner?.name}
+        isOwner={true}
+        onSaveMyName={saveMyName}
         onBuy={buyItem}
         onPlace={placeItem}
         onRemoveSelected={removeSelected}
+        setTyping={setIsTyping}
       />
     </div>
   );

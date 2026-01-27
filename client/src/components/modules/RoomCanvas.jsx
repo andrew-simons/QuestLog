@@ -33,7 +33,12 @@ function useAssets() {
   const manifest = useMemo(
     () => ({
       roomBg: "/img/room.png",
-      beaverSheet: random(["/img/beaver.png", "/img/beaverBlinking.png", "/img/beaverExcited.png", "/img/beaverHappy.png"]),
+      beaverSheet: random([
+        "/img/beaver.png",
+        "/img/beaverBlinking.png",
+        "/img/beaverExcited.png",
+        "/img/beaverHappy.png",
+      ]),
       chair: "/img/items/chair.png",
     }),
     []
@@ -120,15 +125,17 @@ function pointInItem(px, py, item, img) {
 export default function RoomCanvas({
   mode,
   ownerId, // still used for REST room load in visitor mode
-  roomId, // NEW: presence room id (for multiplayer). owner roomId === ownerId typically
-  viewerId, // NEW: current logged-in user id
+  roomId, // presence room id (for multiplayer). owner roomId === ownerId typically
+  viewerId, // current logged-in user id
   catalogByKey,
   socket,
   onSelectedChange,
   reloadToken,
+  disableInput, 
 }) {
   const canEditItems = mode === "owner";
   const canMove = !!viewerId; // owner + visitor can move if logged in
+  const canMoveNow = canMove && !disableInput; // ✅ gating switch
 
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
@@ -138,7 +145,30 @@ export default function RoomCanvas({
 
   const [selectedItemId, setSelectedItemId] = useState(null);
 
-  const keysRef = useRef({ w: false, a: false, s: false, d: false, up: false, down: false });
+  const keysRef = useRef({
+    w: false,
+    a: false,
+    s: false,
+    d: false,
+    up: false,
+    down: false,
+  });
+
+  const clearKeys = () => {
+    keysRef.current = {
+      w: false,
+      a: false,
+      s: false,
+      d: false,
+      up: false,
+      down: false,
+    };
+  };
+
+  // ✅ if typing starts, immediately stop movement / scaling
+  useEffect(() => {
+    if (disableInput) clearKeys();
+  }, [disableInput]);
 
   // World (items only now)
   const worldRef = useRef({
@@ -151,8 +181,9 @@ export default function RoomCanvas({
   // helper: ensure our local beaver object exists
   const getMyBeaver = () => {
     if (!viewerId) return null;
-    if (!playersRef.current.has(String(viewerId))) {
-      playersRef.current.set(String(viewerId), {
+    const id = String(viewerId);
+    if (!playersRef.current.has(id)) {
+      playersRef.current.set(id, {
         x: 525,
         y: 510,
         dir: "down",
@@ -162,7 +193,7 @@ export default function RoomCanvas({
         isMoving: false,
       });
     }
-    return playersRef.current.get(String(viewerId));
+    return playersRef.current.get(id);
   };
 
   const dragRef = useRef({ draggingId: null, grabDx: 0, grabDy: 0 });
@@ -380,16 +411,13 @@ export default function RoomCanvas({
     };
   }, [socket, viewerId, roomId]);
 
-  // selected item callback (optional)
-  useEffect(() => {
-    onSelectedChange?.(selectedItemId);
-  }, [selectedItemId, onSelectedChange]);
 
   // Keyboard (movement for owner + visitors; item scaling only for owner)
   useEffect(() => {
     if (!canMove) return;
 
     const down = (e) => {
+      if (disableInput) return; 
       if (e.repeat) return;
 
       const k = e.key.toLowerCase();
@@ -437,7 +465,7 @@ export default function RoomCanvas({
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
     };
-  }, [canMove, canEditItems]);
+  }, [canMove, canEditItems, disableInput]);
 
   // Pointer events (owner only)
   useEffect(() => {
@@ -471,11 +499,13 @@ export default function RoomCanvas({
           dragRef.current.grabDx = p.x - item.x;
           dragRef.current.grabDy = p.y - item.y;
           setSelectedItemId(item.id);
+          onSelectedChange?.({ id: item.id, itemKey: item.itemKey });
           return;
         }
       }
 
       setSelectedItemId(null);
+      onSelectedChange?.(null);
     };
 
     const onMove = (e) => {
@@ -510,6 +540,7 @@ export default function RoomCanvas({
     const onWheel = (e) => {
       if (!canEditItems) return;
       if (!selectedItemId) return;
+      if (disableInput) return; // ✅ don’t scale items while typing
 
       e.preventDefault();
       const item = worldRef.current.items.find((it) => it.id === selectedItemId);
@@ -534,7 +565,7 @@ export default function RoomCanvas({
       canvas.removeEventListener("pointercancel", onUp);
       canvas.removeEventListener("wheel", onWheel);
     };
-  }, [canEditItems, assetsRef, catalogByKey, selectedItemId]);
+  }, [canEditItems, assetsRef, catalogByKey, selectedItemId, disableInput]);
 
   // Render loop
   useEffect(() => {
@@ -549,7 +580,7 @@ export default function RoomCanvas({
       lastT = t;
 
       updateViewTransform();
-      if (canMove) update(dt);
+      if (canMoveNow) update(dt); // ✅ ONLY update when allowed
       render();
     };
 
@@ -605,15 +636,13 @@ export default function RoomCanvas({
         me.frameTimer = 0;
       }
 
-      // Keep our Map updated (in case getMyBeaver returned object not referenced)
+      // Keep our Map updated
       playersRef.current.set(String(viewerId), me);
 
-      // -------------------------
-      // NEW: presence broadcast (everyone), throttled
-      // -------------------------
+      // presence broadcast (throttled)
       if (socket && roomId && viewerId) {
         const now = performance.now();
-        const SEND_EVERY_MS = 1000 / 15; // ~15 Hz max
+        const SEND_EVERY_MS = 1000 / 15;
         const POS_EPS = 1.5;
 
         const nx = me.x,
@@ -635,9 +664,7 @@ export default function RoomCanvas({
         }
       }
 
-      // -------------------------
       // Persist owner beaver to Mongo occasionally (owner only)
-      // -------------------------
       if (canEditItems) {
         if (moving) {
           persistRef.current.t += dt;
@@ -746,7 +773,7 @@ export default function RoomCanvas({
   }, [
     assetsReady,
     dpr,
-    canMove,
+    canMoveNow, // ✅ changed
     canEditItems,
     assetsRef,
     catalogByKey,

@@ -489,6 +489,7 @@ router.get("/inventory", async (req, res) => {
 });
 
 // GET /api/room - load (or create) the user's room
+// GET /api/room - load (or create) the user's room (+ owner info)
 router.get("/room", async (req, res) => {
   try {
     if (!req.user) return res.status(401).send({ error: "Not logged in" });
@@ -500,7 +501,9 @@ router.get("/room", async (req, res) => {
       room = created.toObject();
     }
 
-    res.send(room);
+    const owner = await User.findById(req.user._id).select("name friendCode").lean();
+
+    res.send({ ...room, owner });
   } catch (err) {
     console.log(err);
     res.status(500).send({ error: "Failed to load room" });
@@ -1012,35 +1015,57 @@ router.post("/friends/requestByCode", async (req, res) => {
 
 // POST /api/me/name
 router.post("/me/name", async (req, res) => {
-  if (!req.user) return res.status(401).send({ error: "Not logged in" });
+  try {
+    if (!req.user) return res.status(401).send({ error: "Not logged in" });
 
-  const { name } = req.body;
-  if (!name || name.trim().length < 1) {
-    return res.status(400).send({ error: "Invalid name" });
+    const raw = req.body?.name;
+
+    if (typeof raw !== "string") {
+      return res.status(400).send({ error: "name must be a string" });
+    }
+
+    const trimmed = raw.trim();
+
+    if (trimmed.length < 1) {
+      return res.status(400).send({ error: "Invalid name" });
+    }
+
+    if (trimmed.length > 14) {
+      return res.status(400).send({ error: "Name max 20 characters" });
+      // OR: const trimmed = raw.trim().slice(0, 20); (auto-truncate)
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { name: trimmed },
+      { new: true, runValidators: true }
+    ).lean();
+
+    // keep session in sync so /api/whoami immediately shows the new name
+    if (user) req.session.user = user;
+
+    return res.send(user);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send({ error: "Failed to update name" });
   }
-
-  const user = await User.findByIdAndUpdate(req.user._id, { name: name.trim() }, { new: true });
-
-  res.send(user);
 });
 
 // GET /api/rooms/:userId - read-only load of someone else's room
+// GET /api/rooms/:userId - read-only load of someone else's room (+ owner info)
 router.get("/rooms/:userId", async (req, res) => {
   try {
     if (!req.user) return res.status(401).send({ error: "Not logged in" });
 
     const ownerId = req.params.userId;
 
-    // OPTIONAL: enforce friends-only visibility:
-    // const friendIds = await getAcceptedFriendIds(req.user._id);
-    // const isSelf = String(req.user._id) === String(ownerId);
-    // const isFriend = friendIds.some((id) => String(id) === String(ownerId));
-    // if (!isSelf && !isFriend) return res.status(403).send({ error: "Not allowed" });
+    const owner = await User.findById(ownerId).select("name friendCode").lean();
+    if (!owner) return res.status(404).send({ error: "Owner not found" });
 
     let room = await Room.findOne({ userId: ownerId }).lean();
-    if (!room) return res.send({ userId: ownerId, placedItems: [], beaver: null });
+    if (!room) room = { userId: ownerId, placedItems: [], beaver: null };
 
-    res.send(room);
+    res.send({ ...room, owner }); // ✅ include owner info
   } catch (err) {
     console.log(err);
     res.status(500).send({ error: "Failed to load room" });

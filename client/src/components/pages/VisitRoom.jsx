@@ -11,21 +11,18 @@ export default function VisitRoom() {
   const [room, setRoom] = useState(null);
   const [viewerId, setViewerId] = useState(null);
 
-  // whoami (so visitor can have a beaver)
   useEffect(() => {
     get("/api/whoami")
       .then((me) => setViewerId(me?._id || null))
       .catch(console.error);
   }, []);
 
-  // load catalog so items render
   useEffect(() => {
     get("/api/items")
       .then((items) => setCatalog(items || []))
       .catch(console.error);
   }, []);
 
-  // keep old room:update watcher for items/backcompat (optional)
   useEffect(() => {
     if (!ownerId) return;
 
@@ -39,6 +36,7 @@ export default function VisitRoom() {
         ...(prev || { userId: ownerId }),
         placedItems: payload.placedItems || [],
         beaver: payload.beaver || null,
+        owner: prev?.owner, // keep owner info
       }));
     };
 
@@ -56,6 +54,8 @@ export default function VisitRoom() {
     return m;
   }, [catalog]);
 
+  const ownerName = room?.owner?.name;
+
   return (
     <div style={{ display: "flex", height: "100vh" }}>
       <RoomCanvas
@@ -67,9 +67,14 @@ export default function VisitRoom() {
         catalogByKey={catalogByKey}
         reloadToken={0}
       />
+
       <div style={{ width: 280, borderLeft: "1px solid #ddd", padding: 12 }}>
-        <h3 style={{ marginTop: 0 }}>Visiting room</h3>
-        <div style={{ opacity: 0.8, fontSize: 13 }}>Read-only items. Movement is multiplayer.</div>
+        <h3 style={{ marginTop: 0 }}>
+          {ownerName ? `Visiting ${ownerName}'s Room` : "Visiting room"}
+        </h3>
+        <div style={{ opacity: 0.8, fontSize: 13 }}>
+          Read-only items. Movement is multiplayer.
+        </div>
       </div>
     </div>
   );
