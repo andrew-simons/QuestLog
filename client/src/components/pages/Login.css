@@ -1,16 +1,40 @@
-.button {
-  background-color: #4CAF50; /* Green background */
-  border: none; /* Remove default border */
-  color: white; /* White text */
-  padding: 15px 32px; /* Add some padding */
-  text-align: center; /* Center the text */
-  text-decoration: none; /* Remove underline from link */
-  display: inline-block; /* Make it behave like a block for styling */
-  font-size: 16px; /* Increase font size */
-  cursor: pointer; /* Change cursor to pointer on hover */
-  border-radius: 8px; /* Optional: Rounded corners */
+.login-container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #fdf1e7; /* need to work on this */
+  font-family: "Comic Sans MS", "Arial Rounded MT Bold", sans-serif;
 }
 
-.button:hover {
-  background-color: #45a049; /* Darker green on hover */
+.login-card {
+  text-align: center;
+  padding: 40px 60px;
+  border: 3px solid #f08c3c;
+  border-radius: 16px;
+  background-color: #fff7ef;
+}
+
+.beaver-img {
+  width: 140px;
+  margin-bottom: 10px;
+}
+
+.title {
+  font-size: 36px;
+  margin: 8px 0;
+  letter-spacing: 2px;
+}
+
+.subtitle {
+  font-size: 16px;
+  margin-bottom: 24px;
+}
+
+.login-button {
+  display: inline-block;
+  padding: 8px 16px;
+  border: 2px solid black;
+  border-radius: 6px;
+  background-color: white;
 }

@@ -7,24 +7,25 @@ import "./Login.css";
 import { GoogleLogin } from "@react-oauth/google";
 
 const Login = () => {
-  const { userId, handleLogin, handleLogout } = useContext(UserContext);
+  const { handleLogin } = useContext(UserContext);
 
   return (
-    <>
-      <h1>Login Page</h1>
-      {userId ? (
-        <button className="NavBar-link NavBar-login u-inlineBlock" onClick={handleLogout}>
-          Sign out
-        </button>
-      ) : (
-        <GoogleLogin
-          text="signin_with"
-          onSuccess={handleLogin}
-          onFailure={(err) => console.log(err)}
-          containerProps={{ className: "NavBar-link NavBar-login u-inlineBlock" }}
-        />
-      )}
-    </>
+    <div className="login-container">
+      <div className="login-card">
+        <img src="/img/ui/beaver.png" alt="Beaver mascot" className="beaver-img" />
+
+        <h1 className="title">QUESTLOG</h1>
+        <p className="subtitle">small quests, real growth</p>
+
+        <div className="login-button">
+          <GoogleLogin
+            text="signin_with"
+            onSuccess={handleLogin}
+            onFailure={(err) => console.log(err)}
+          />
+        </div>
+      </div>
+    </div>
   );
 };
 
