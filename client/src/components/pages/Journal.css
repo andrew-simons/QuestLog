@@ -1,3 +1,4 @@
+
 .jrPage {
   max-width: 980px;
   margin: 0 auto;
@@ -301,6 +302,7 @@
   resize: vertical;
   outline: none;
   background: white;
+  font-family: "Roboto", sans-serif;
 }
 
 .jbTextarea:focus {
