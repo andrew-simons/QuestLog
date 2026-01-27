@@ -16,6 +16,7 @@ const FLOOR_RIGHT = { x: 1000, y: 570 };
 const FLOOR_MARGIN = 24;
 
 const lerp = (a, b, t) => a + (b - a) * t;
+const random = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 function floorTopY(x) {
   if (x <= FLOOR_CORNER.x) {
@@ -32,7 +33,7 @@ function useAssets() {
   const manifest = useMemo(
     () => ({
       roomBg: "/img/room.png",
-      beaverSheet: "/img/beaver.png",
+      beaverSheet: random(["/img/beaver.png", "/img/beaverBlinking.png", "/img/beaverExcited.png", "/img/beaverHappy.png"]),
       chair: "/img/items/chair.png",
     }),
     []
