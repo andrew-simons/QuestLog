@@ -12,7 +12,9 @@ const friendship = require("./models/friendship");
 // create a new OAuth client used to verify google sign-in
 //    TODO: replace with your own CLIENT_ID
 const CLIENT_ID = "58023725513-8571eqs79mlmqbgfi4ngf5gprsn3pqtl.apps.googleusercontent.com";
-const client = new OAuth2Client(CLIENT_ID);
+const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, "postmessage");
+console.log("GOOGLE_CLIENT_SECRET present?", !!process.env.GOOGLE_CLIENT_SECRET);
 
 // accepts a login token from the frontend, and verifies that it's legit
 function verify(token) {
@@ -102,10 +104,40 @@ function ensureLoggedIn(req, res, next) {
 
   next();
 }
+async function login_code(req, res) {
+  try {
+    const { code } = req.body;
+    if (!code) return res.status(400).send({ error: "Missing code" });
+
+    // Exchange code for tokens (includes id_token)
+    const { tokens } = await client.getToken(code);
+
+    if (!tokens?.id_token) {
+      return res.status(401).send({ error: "No id_token returned" });
+    }
+
+    // Verify id_token to get Google profile payload
+    const ticket = await client.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    const user = await getOrCreateUser(payload);
+
+    req.session.user = user;
+    res.send(user);
+  } catch (err) {
+    console.log("Failed to log in (code):", err);
+    res.status(401).send({ error: "Google auth failed" });
+  }
+}
 
 module.exports = {
   login,
   logout,
+  login_code,
   populateCurrentUser,
   ensureLoggedIn,
 };

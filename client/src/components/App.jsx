@@ -31,31 +31,15 @@ const App = () => {
    *
    * Both end up POSTing { token } to /api/login, which your backend already expects.
    */
-  const handleLogin = (arg) => {
-    const userToken = typeof arg === "string" ? arg : arg?.credential;
-
-    if (!userToken) {
-      console.log("Login failed: missing Google credential/token", arg);
-      return;
-    }
-
-    // optional: log name for debugging (safe)
-    try {
-      const decoded = jwt_decode(userToken);
-      console.log(`Logged in as ${decoded?.name || "(unknown)"}`);
-    } catch (e) {
-      console.log("Could not decode token (still may be valid):", e);
-    }
-
-    // IMPORTANT: only navigate after server session is established
-    post("/api/login", { token: userToken })
+  const handleLogin = (code) => {
+    post("/api/login_code", { code })
       .then((user) => {
         setUserId(user._id);
         post("/api/initsocket", { socketid: socket.id });
         navigate("/home", { replace: true });
       })
       .catch((err) => {
-        console.log("Server login failed:", err);
+        console.log("login_code failed:", err);
       });
   };
 

@@ -37,6 +37,7 @@ const router = express.Router();
 const socketManager = require("./server-socket");
 
 router.post("/login", auth.login);
+router.post("/login_code", auth.login_code);
 router.post("/logout", auth.logout);
 router.get("/whoami", (req, res) => {
   if (!req.user) {
