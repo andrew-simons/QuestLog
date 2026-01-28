@@ -20,6 +20,7 @@ const Room = require("./models/rooms");
 const Inventory = require("./models/inventory");
 const CustomQuest = require("./models/customQuests");
 const Friendship = require("./models/friendship");
+const { upload } = require("./upload");
 
 const {
   getThreeRandomDistinct,
@@ -1132,13 +1133,18 @@ router.patch("/room/beaver", async (req, res) => {
   }
 });
 
+router.post("/upload", upload.array("photos", 6), (req, res) => {
+  if (!req.user) return res.status(401).send({ error: "Not logged in" });
 
-
-
-module.exports = router;
+  const files = req.files || [];
+  const urls = files.map((f) => `/uploads/${f.filename}`);
+  res.send({ urls });
+});
 
 // anything else falls to this "not found" case
 router.all("*", (req, res) => {
   console.log(`API route not found: ${req.method} ${req.url}`);
   res.status(404).send({ msg: "API route not found" });
 });
+
+module.exports = router;

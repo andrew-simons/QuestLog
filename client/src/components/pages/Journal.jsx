@@ -4,8 +4,6 @@ import { UserContext } from "../App";
 import JournalCard from "../modules/JournalCard";
 import "./Journal.css";
 
-
-
 const Journal = () => {
   const { userId } = useContext(UserContext);
 
@@ -18,6 +16,20 @@ const Journal = () => {
   const [sortBy, setSortBy] = useState("recent"); // recent|alpha
 
   const [savingKey, setSavingKey] = useState(null);
+
+  const uploadPhotos = async (files) => {
+    const fd = new FormData();
+    Array.from(files).forEach((f) => fd.append("photos", f));
+
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: fd,
+      credentials: "include",
+    });
+
+    if (!res.ok) throw new Error("Upload failed");
+    return res.json(); // { urls: [...] }
+  };
 
   useEffect(() => {
     if (!userId) return;
@@ -68,31 +80,42 @@ const Journal = () => {
       .finally(() => setLoading(false));
   }, [userId]);
 
-  const saveJournal = (item, { text, photoUrls }) => {
-    if (!userId) return Promise.reject(new Error("Not logged in"));
+  const saveJournal = async (item, { text, photoUrls, files }) => {
+    if (!userId) throw new Error("Not logged in");
 
     const savingId = item.source === "builtin" ? item.id : String(item.id);
     setSavingKey(`${item.source}:${savingId}`);
 
-    const body =
-      item.source === "builtin"
-        ? { source: "builtin", questKey: item.id, text, photoUrls }
-        : { source: "custom", customQuestId: String(item.id), text, photoUrls };
+    try {
+      let uploadedUrls = [];
+      if (files && files.length) {
+        const out = await uploadPhotos(files);
+        uploadedUrls = out.urls || [];
+      }
 
-    return patch("/api/journal", body)
-      .then((updatedDoc) => {
-        setJournalByQuestKey((prev) => {
-          const next = new Map(prev);
-          const key =
-            updatedDoc.source === "builtin"
-              ? `builtin:${updatedDoc.questKey}`
-              : `custom:${String(updatedDoc.customQuestId)}`;
-          next.set(key, updatedDoc);
-          return next;
-        });
-        return updatedDoc;
-      })
-      .finally(() => setSavingKey(null));
+      const finalPhotoUrls = [...(photoUrls || []), ...uploadedUrls];
+
+      const body =
+        item.source === "builtin"
+          ? { source: "builtin", questKey: item.id, text, photoUrls: finalPhotoUrls }
+          : { source: "custom", customQuestId: String(item.id), text, photoUrls: finalPhotoUrls };
+
+      const updatedDoc = await patch("/api/journal", body);
+
+      setJournalByQuestKey((prev) => {
+        const next = new Map(prev);
+        const key =
+          updatedDoc.source === "builtin"
+            ? `builtin:${updatedDoc.questKey}`
+            : `custom:${String(updatedDoc.customQuestId)}`;
+        next.set(key, updatedDoc);
+        return next;
+      });
+
+      return updatedDoc;
+    } finally {
+      setSavingKey(null);
+    }
   };
 
   const getJournalFor = (item) => {

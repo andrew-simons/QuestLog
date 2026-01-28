@@ -28,6 +28,7 @@ const session = require("express-session"); // library that stores info about ea
 const mongoose = require("mongoose"); // library to connect to MongoDB
 const path = require("path"); // provide utilities for working with file and directory paths
 
+const { UPLOAD_DIR } = require("./upload");
 const api = require("./api");
 const auth = require("./auth");
 
@@ -75,6 +76,8 @@ app.use(auth.populateCurrentUser);
 
 // connect user-defined routes
 app.use("/api", api);
+
+app.use("/uploads", express.static(UPLOAD_DIR));
 
 // load the compiled react files, which will serve /index.html and /bundle.js
 const reactPath = path.resolve(__dirname, "..", "client", "dist");

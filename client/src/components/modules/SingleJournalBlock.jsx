@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 const badgeStyle = {
   fontSize: 12,
@@ -10,7 +10,6 @@ const badgeStyle = {
 };
 
 const Icon = ({ name }) => {
-  // tiny inline icons (no dependency)
   const common = { width: 16, height: 16, display: "inline-block" };
   if (name === "check")
     return (
@@ -85,9 +84,14 @@ const formatDate = (iso) => {
   });
 };
 
-const isValidUrl = (s) => {
+// Allow http(s) URLs AND your local uploaded URLs like /uploads/xxx.png
+const isValidPhotoRef = (s) => {
+  if (!s) return false;
+  const t = String(s).trim();
+  if (!t) return false;
+  if (t.startsWith("/uploads/")) return true;
   try {
-    const u = new URL(s);
+    const u = new URL(t);
     return u.protocol === "http:" || u.protocol === "https:";
   } catch {
     return false;
@@ -99,7 +103,7 @@ const normalizeUrls = (raw) =>
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean)
-    .filter(isValidUrl);
+    .filter(isValidPhotoRef);
 
 const SingleJournalBlock = ({ item, journal, onSave, saving }) => {
   const [draftText, setDraftText] = useState("");
@@ -107,34 +111,57 @@ const SingleJournalBlock = ({ item, journal, onSave, saving }) => {
   const [status, setStatus] = useState(""); // "", "Saved", "Save failed"
   const [photoInput, setPhotoInput] = useState("");
 
+  // NEW: local file selection per journal entry
+  const [selectedFiles, setSelectedFiles] = useState([]); // File[]
+  const fileInputRef = useRef(null);
+
   useEffect(() => {
     setDraftText(journal?.text || "");
     setDraftPhotos(Array.isArray(journal?.photoUrls) ? journal.photoUrls : []);
     setPhotoInput("");
+    setSelectedFiles([]);
     setStatus("");
   }, [item.source, item.id, journal?.text, journal?.photoUrls]);
+
+  // previews for selectedFiles
+  const filePreviews = useMemo(() => {
+    return selectedFiles.map((f) => ({
+      name: f.name,
+      url: URL.createObjectURL(f),
+    }));
+  }, [selectedFiles]);
+
+  // cleanup preview URLs
+  useEffect(() => {
+    return () => {
+      filePreviews.forEach((p) => URL.revokeObjectURL(p.url));
+    };
+  }, [filePreviews]);
 
   const meta = useMemo(() => {
     const sourceLabel = item.source === "builtin" ? "Built-in" : "Custom";
     const rarity = item.raw?.rarity ?? "?";
     const xp = item.raw?.xpReward ?? item.raw?.expReward ?? "?";
     const idLine =
-      item.source === "builtin"
-        ? `Quest #${item.id}`
-        : `ID: ${String(item.id).slice(-6)}`;
+      item.source === "builtin" ? `Quest #${item.id}` : `ID: ${String(item.id).slice(-6)}`;
     const updated = formatDate(journal?.updatedAt);
-
     return { sourceLabel, rarity, xp, idLine, updated };
   }, [item, journal?.updatedAt]);
 
   const dirty =
     (draftText || "") !== (journal?.text || "") ||
-    JSON.stringify(draftPhotos || []) !== JSON.stringify(journal?.photoUrls || []);
+    JSON.stringify(draftPhotos || []) !== JSON.stringify(journal?.photoUrls || []) ||
+    (selectedFiles?.length || 0) > 0; // NEW: if files selected, treat as dirty
 
   const handleSave = () => {
     setStatus("");
-    return onSave({ text: draftText, photoUrls: draftPhotos })
-      .then(() => setStatus("Saved"))
+    return onSave({ text: draftText, photoUrls: draftPhotos, files: selectedFiles })
+      .then(() => {
+        setStatus("Saved");
+        setSelectedFiles([]);
+        // clear the native input so you can re-select same file later
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      })
       .catch((err) => {
         console.log(err);
         setStatus("Save failed");
@@ -155,11 +182,44 @@ const SingleJournalBlock = ({ item, journal, onSave, saving }) => {
   };
 
   const onKeyDownTextarea = (e) => {
-    // Cmd/Ctrl+Enter to save
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
       e.preventDefault();
       if (!saving) handleSave();
     }
+  };
+
+  const onPickFiles = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    // optional: cap to 6 to match backend upload.array("photos", 6)
+    const capped = files.slice(0, 6);
+
+    setSelectedFiles((prev) => {
+      // merge by name+size+lastModified to avoid duplicates
+      const keyOf = (f) => `${f.name}:${f.size}:${f.lastModified}`;
+      const seen = new Set(prev.map(keyOf));
+      const out = [...prev];
+      for (const f of capped) {
+        const k = keyOf(f);
+        if (!seen.has(k)) {
+          seen.add(k);
+          out.push(f);
+        }
+      }
+      return out.slice(0, 6);
+    });
+
+    setStatus("");
+  };
+
+  const removeSelectedFile = (idx) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== idx));
+    setStatus("");
+  };
+
+  const openFilePicker = () => {
+    if (fileInputRef.current) fileInputRef.current.click();
   };
 
   return (
@@ -212,11 +272,32 @@ const SingleJournalBlock = ({ item, journal, onSave, saving }) => {
         <div className="jbPhotosSection">
           <div className="jbPhotosTop">
             <label className="jbLabel">Photos</label>
-            <span className="jbHint">Paste image URLs and press Enter</span>
+            <span className="jbHint">Upload images or paste URLs</span>
           </div>
 
+          {/* NEW: Upload button + hidden input */}
           <div className="jbPhotoInputRow">
-            <div className="jbPhotoInputWrap">
+            <button
+              className="jbBtn secondary"
+              type="button"
+              onClick={openFilePicker}
+              disabled={saving || selectedFiles.length >= 6}
+              title="Upload images from your device"
+            >
+              <Icon name="photo" /> Upload
+            </button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={onPickFiles}
+              style={{ display: "none" }}
+            />
+
+            {/* keep your URL input, optional */}
+            <div className="jbPhotoInputWrap" style={{ flex: 1 }}>
               <span className="jbPhotoIcon">
                 <Icon name="photo" />
               </span>
@@ -233,7 +314,7 @@ const SingleJournalBlock = ({ item, journal, onSave, saving }) => {
                     addPhotosFromInput();
                   }
                 }}
-                placeholder="https://… , https://…"
+                placeholder="https://… , /uploads/…"
               />
             </div>
 
@@ -248,24 +329,31 @@ const SingleJournalBlock = ({ item, journal, onSave, saving }) => {
             </button>
           </div>
 
-          {draftPhotos.length > 0 && (
+          {/* NEW: show previews of selectedFiles */}
+          {filePreviews.length > 0 && (
             <>
-              <div className="jbChips">
-                {draftPhotos.map((url) => (
-                  <span className="jbChip" key={url} title={url}>
-                    <span className="jbChipText">{url}</span>
+              <div className="jbGrid">
+                {filePreviews.map((p, idx) => (
+                  <div className="jbImgWrap" key={p.url}>
+                    <img className="jbImg" src={p.url} alt={p.name} loading="lazy" />
                     <button
-                      className="jbChipX"
+                      className="jbImgRemove"
                       type="button"
-                      onClick={() => removePhoto(url)}
-                      aria-label="Remove photo"
+                      onClick={() => removeSelectedFile(idx)}
+                      aria-label="Remove"
+                      title="Remove"
                     >
                       ×
                     </button>
-                  </span>
+                  </div>
                 ))}
               </div>
+            </>
+          )}
 
+          {/* existing saved photos */}
+          {draftPhotos.length > 0 && (
+            <>
               <div className="jbGrid">
                 {draftPhotos.map((url) => (
                   <div className="jbImgWrap" key={url}>
@@ -298,7 +386,13 @@ const SingleJournalBlock = ({ item, journal, onSave, saving }) => {
             className="jbBtn primary"
             type="button"
             onClick={handleSave}
-            disabled={saving || (!dirty && (draftText || "").length === 0 && draftPhotos.length === 0)}
+            disabled={
+              saving ||
+              (!dirty &&
+                (draftText || "").length === 0 &&
+                draftPhotos.length === 0 &&
+                selectedFiles.length === 0)
+            }
           >
             <Icon name="save" />
             {saving ? "Saving…" : "Save"}
