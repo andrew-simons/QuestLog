@@ -162,3 +162,32 @@
     filter: blur(16px);
   }
 }
+.sketchLogo {
+  height: 32px; /* tweak this */
+  width: auto;
+  display: block;
+
+  /* keeps the sketchy feel */
+  transform: rotate(-0.4deg);
+
+  /* prevents Google button / tabs from shifting */
+  pointer-events: none;
+}
+
+.sketchTabs {
+  display: flex;
+  align-items: center;
+  gap: 16px; /* space between tabs group and auth */
+}
+
+/* MAIN NAV TABS */
+.sketchTabs-main {
+  display: flex;
+  align-items: center;
+  gap: 14px; /* equal spacing between the 4 tabs */
+}
+
+/* AUTH BUTTON */
+.sketchNav-right {
+  margin-left: 8px; /* subtle separation so it doesn't feel glued */
+}

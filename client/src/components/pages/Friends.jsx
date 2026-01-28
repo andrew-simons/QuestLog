@@ -297,7 +297,9 @@ export default function Friends() {
                     <div className="listMain">
                       <div className="listName">{edge.requester?.name || "Unknown"}</div>
                       <div className="listMeta">
-                        Friend code: {edge.requester?.friendCode || "—"}
+                        Friend code: {edge.requester?.friendCode || "—"} · Level:{" "}
+                        {edge.requester?.level ?? 1} · XP: {edge.requester?.xp ?? 0} · Coins:{" "}
+                        {edge.requester?.coins ?? 0}
                       </div>
                     </div>
                     <div className="listActions">
@@ -337,7 +339,9 @@ export default function Friends() {
                   <li className="listItem" key={f._id}>
                     <div className="listMain">
                       <div className="listName">{f.name || "Unnamed"}</div>
-                      <div className="listMeta">Friend code: {f.friendCode || "—"}</div>
+                      <div className="listMeta">
+                        Friend code: {f.friendCode || "—"} · Level: {f.level ?? 1}
+                      </div>
                     </div>
                     <div className="listActions">
                       <button

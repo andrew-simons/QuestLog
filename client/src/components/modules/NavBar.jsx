@@ -25,22 +25,26 @@ const NavBar = () => {
   return (
     <nav className="NavBar-container sketchNav">
       <div className="sketchNav-left">
-        <div className="NavBar-title sketchBrand">QUESTLOG</div>
+        <div className="NavBar-title sketchBrand">
+          <img src="/img/ui/logoBrown.png" alt="QuestLog" className="sketchLogo" />
+        </div>
       </div>
 
       <div className="NavBar-linkContainer sketchTabs">
-        <Link to="/home" className={tabClass("home")}>
-          Home
-        </Link>
-        <Link to="/quests" className={tabClass("quests")}>
-          Quests
-        </Link>
-        <Link to="/journal" className={tabClass("journal")}>
-          Journal
-        </Link>
-        <Link to="/friends" className={tabClass("friends")}>
-          Social
-        </Link>
+        <div className="sketchTabs-main">
+          <Link to="/home" className={tabClass("home")}>
+            Home
+          </Link>
+          <Link to="/quests" className={tabClass("quests")}>
+            Quests
+          </Link>
+          <Link to="/journal" className={tabClass("journal")}>
+            Journal
+          </Link>
+          <Link to="/friends" className={tabClass("friends")}>
+            Social
+          </Link>
+        </div>
 
         <div className="sketchNav-right">
           {userId ? (
@@ -56,7 +60,6 @@ const NavBar = () => {
                 text="signin_with"
                 onSuccess={handleLogin}
                 onFailure={(err) => console.log(err)}
-                containerProps={{ className: "NavBar-link NavBar-login" }}
               />
             </div>
           )}

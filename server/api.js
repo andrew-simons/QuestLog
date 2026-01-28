@@ -984,7 +984,7 @@ router.get("/friends", async (req, res) => {
   const edges = await Friendship.find({
     status: "accepted",
     $or: [{ requester: req.user._id }, { recipient: req.user._id }],
-  }).populate("requester recipient", "name friendCode");
+  }).populate("requester recipient", "name friendCode xp coins level"); // ✅ add these
 
   const friends = edges.map((e) => {
     const requesterIsMe = e.requester._id.equals(req.user._id);
@@ -1210,7 +1210,7 @@ router.patch("/room/wallpaper", async (req, res) => {
       { new: true, upsert: true }
     );
 
-    emitRoomUpdate(req.user._id, room); 
+    emitRoomUpdate(req.user._id, room);
     res.send({ ok: true, wallpaperKey: room.wallpaperKey });
   } catch (e) {
     console.log(e);

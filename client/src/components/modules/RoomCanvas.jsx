@@ -316,15 +316,14 @@ export default function RoomCanvas({
     if (!socket) return;
     if (canEditItems) return;
     if (!ownerId) return;
-    if (payload.wallpaperKey) {
-      wallpaperKeyRef.current = payload.wallpaperKey;
-    }
 
     socket.emit("room:watch", { ownerId });
 
     const onRoomUpdate = (payload) => {
       if (!payload || String(payload.ownerId) !== String(ownerId)) return;
-
+      if (payload.wallpaperKey) {
+        wallpaperKeyRef.current = payload.wallpaperKey;
+      }
       if (payload.placedItems) {
         worldRef.current.items = (payload.placedItems || []).map((p) => ({
           id: p.instanceId,
@@ -776,7 +775,7 @@ export default function RoomCanvas({
           const dh = sh * spriteScale;
 
           ctx.save();
-          if (!isSelf) ctx.globalAlpha = 0.92;
+          if (!isSelf) ctx.globalAlpha = 1;
 
           // y is feet position (anchor)
           ctx.drawImage(sheet, sx, sy, sw, sh, x - dw / 2, y - dh, dw, dh);
