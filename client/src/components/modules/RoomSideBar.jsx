@@ -15,6 +15,9 @@ export default function RoomSidebar({
   onPlace,
   onRemoveSelected,
   setTyping,
+  level,
+  wallpaperKey,
+  onSetWallpaper,
 }) {
   const [tab, setTab] = useState("shop");
 
@@ -54,6 +57,9 @@ export default function RoomSidebar({
     await onSaveMyName(trimmed);
     setEditingName(false);
   }
+
+  const lvl = level ?? 1;
+  const canUseAlt = lvl >= 5;
 
   return (
     <aside className="qs-shell">
@@ -130,18 +136,53 @@ export default function RoomSidebar({
             Remove
           </button>
         </div>
+
+        {/* ✅ NEW: Wallpaper toggle (owner only) */}
+        {isOwner && (
+          <div className="qs-wallpaper">
+            <div className="qs-wallpaper-title">Room background</div>
+
+            <div className="qs-wallpaper-buttons">
+              <button
+                className={`qs-wallpaper-btn ${
+                  (wallpaperKey || "default_wallpaper") === "default_wallpaper" ? "active" : ""
+                }`}
+                onClick={() => onSetWallpaper?.("default_wallpaper")}
+                type="button"
+              >
+                Default
+              </button>
+
+              <button
+                className={`qs-wallpaper-btn ${
+                  wallpaperKey === "alt_wallpaper" ? "active" : ""
+                }`}
+                disabled={!canUseAlt}
+                title={!canUseAlt ? "Unlocks at level 5" : ""}
+                onClick={() => onSetWallpaper?.("alt_wallpaper")}
+                type="button"
+              >
+                Level 5 {!canUseAlt ? "🔒" : ""}
+              </button>
+            </div>
+
+            {!canUseAlt && <div className="qs-wallpaper-hint">Reach level 5 to unlock.</div>}
+          </div>
+        )}
       </div>
 
       <div className="qs-tabs">
         <button
           className={`qs-tab ${tab === "inventory" ? "active" : ""}`}
           onClick={() => setTab("inventory")}
+          type="button"
         >
           Inventory
         </button>
         <button
           className={`qs-tab ${tab === "shop" ? "active" : ""}`}
           onClick={() => setTab("shop")}
+          type="button"
         >
           Shop
         </button>
@@ -178,7 +219,6 @@ export default function RoomSidebar({
             const max = it.maxOwned ?? 1;
             const canAfford = coins >= it.priceCoins;
 
-            // buying is fine anywhere; placing is owner-only (handled above)
             const disabled = ownedTotal >= max || !canAfford;
 
             return (
@@ -213,6 +253,7 @@ function ItemCard({ name, img, sub, actionLabel, disabled, onAction }) {
         className={`qs-primary ${disabled ? "off" : "on"}`}
         disabled={disabled}
         onClick={onAction}
+        type="button"
       >
         {actionLabel}
       </button>

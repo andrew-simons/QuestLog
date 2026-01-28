@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { get, post, del } from "../../utilities";
+import { get, post, del, patch } from "../../utilities";
 import RoomCanvas from "../modules/RoomCanvas";
 import { socket } from "../../client-socket";
 import RoomSidebar from "../modules/RoomSideBar";
@@ -10,6 +10,7 @@ export default function Home() {
   const [coins, setCoins] = useState(0);
   const [catalog, setCatalog] = useState([]);
   const [inventory, setInventory] = useState([]);
+  const [wallpaperKey, setWallpaperKey] = useState("default_wallpaper");
 
   const [viewer, setViewer] = useState(null); // whoami
   const [roomOwner, setRoomOwner] = useState(null); // same as viewer on Home
@@ -30,6 +31,7 @@ export default function Home() {
 
   async function refreshPlacedCounts() {
     const room = await get("/api/room");
+    setWallpaperKey(room?.wallpaperKey || "default_wallpaper");
     const m = new Map();
     for (const p of room?.placedItems || []) {
       m.set(p.itemKey, (m.get(p.itemKey) || 0) + 1);
@@ -38,6 +40,13 @@ export default function Home() {
 
     // if your backend returns { owner }, use that. Otherwise fallback to viewer.
     if (room?.owner) setRoomOwner(room.owner);
+  }
+
+  async function setRoomWallpaper(nextKey) {
+    const resp = await patch("/api/room/wallpaper", { wallpaperKey: nextKey });
+    if (resp?.error) return console.log(resp.error);
+    setWallpaperKey(resp.wallpaperKey || nextKey);
+    setReloadToken((t) => t + 1); // optional, but fine
   }
 
   useEffect(() => {
@@ -155,6 +164,9 @@ export default function Home() {
         onPlace={placeItem}
         onRemoveSelected={removeSelected}
         setTyping={setIsTyping}
+        level={viewer?.level ?? 1}
+        wallpaperKey={wallpaperKey}
+        onSetWallpaper={setRoomWallpaper}
       />
     </div>
   );

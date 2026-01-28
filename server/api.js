@@ -60,11 +60,12 @@ router.post("/initsocket", (req, res) => {
 function emitRoomUpdate(userId, roomDoc) {
   try {
     const io = socketManager.getIo?.();
-    if (!io) return; // sockets not initialized
+    if (!io) return;
     io.to(`room:${String(userId)}`).emit("room:update", {
       ownerId: String(userId),
       placedItems: roomDoc?.placedItems || [],
       beaver: roomDoc?.beaver || null,
+      wallpaperKey: roomDoc?.wallpaperKey || "default_wallpaper", // ✅ add
     });
   } catch (e) {
     console.log("emitRoomUpdate failed:", e);
@@ -1179,6 +1180,41 @@ router.patch("/me/onboarding", async (req, res) => {
   } catch (e) {
     console.log(e);
     res.status(500).send({ error: "Failed to update onboarding" });
+  }
+});
+
+router.patch("/room/wallpaper", async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).send({ error: "Not logged in" });
+
+    const nextKey = String(req.body?.wallpaperKey || "").trim();
+    if (!nextKey) return res.status(400).send({ error: "wallpaperKey is required" });
+
+    // define the only allowed keys
+    const DEFAULT = "default_wallpaper";
+    const ALT = "alt_wallpaper"; // choose your name
+    const allowed = new Set([DEFAULT, ALT]);
+    if (!allowed.has(nextKey)) {
+      return res.status(400).send({ error: "Invalid wallpaperKey" });
+    }
+
+    // Gate ALT by level
+    const level = req.user.level ?? 1;
+    if (nextKey === ALT && level < 5) {
+      return res.status(403).send({ error: "Wallpaper locked until level 5" });
+    }
+
+    const room = await Room.findOneAndUpdate(
+      { userId: req.user._id },
+      { $set: { wallpaperKey: nextKey } },
+      { new: true, upsert: true }
+    );
+
+    emitRoomUpdate(req.user._id, room); 
+    res.send({ ok: true, wallpaperKey: room.wallpaperKey });
+  } catch (e) {
+    console.log(e);
+    res.status(500).send({ error: "Failed to set wallpaper" });
   }
 });
 

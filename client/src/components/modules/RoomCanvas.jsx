@@ -33,7 +33,8 @@ function floorTopY(x) {
 function useAssets() {
   const manifest = useMemo(
     () => ({
-      roomBg: "/img/room.png",
+      default_wallpaper: "/img/room.png",
+      alt_wallpaper: "/img/space_room.png",
 
       // sprite sheet variants (all 4096x2048)
       beaver0: "/img/sprite_sheets/beaver1_ss.png",
@@ -156,6 +157,7 @@ export default function RoomCanvas({
 
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
+  const wallpaperKeyRef = useRef("default_wallpaper");
 
   const { ready: assetsReady, assetsRef } = useAssets();
   const { w: canvasCssW, h: canvasCssH, dpr } = useCanvasSize(containerRef);
@@ -279,6 +281,7 @@ export default function RoomCanvas({
   // ---- Load room state (items + owner beaver spawn) ----
   async function loadRoomOnce() {
     const room = canEditItems ? await get("/api/room") : await get(`/api/rooms/${ownerId}`);
+    wallpaperKeyRef.current = room?.wallpaperKey || "default_wallpaper";
 
     worldRef.current.items = (room?.placedItems || []).map((p) => ({
       id: p.instanceId,
@@ -313,6 +316,9 @@ export default function RoomCanvas({
     if (!socket) return;
     if (canEditItems) return;
     if (!ownerId) return;
+    if (payload.wallpaperKey) {
+      wallpaperKeyRef.current = payload.wallpaperKey;
+    }
 
     socket.emit("room:watch", { ownerId });
 
@@ -703,7 +709,8 @@ export default function RoomCanvas({
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.scale(dpr, dpr);
 
-      const bg = imgs.roomBg;
+      const bgKey = wallpaperKeyRef.current || "default_wallpaper";
+      const bg = imgs[bgKey];
       if (bg) {
         const tl = worldToScreen(0, 0);
         const br = worldToScreen(ROOM_W, ROOM_H);
