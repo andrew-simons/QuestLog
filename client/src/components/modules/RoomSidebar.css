@@ -360,3 +360,42 @@
   font-size: 12px;
   opacity: 0.7;
 }
+.qs-xp {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(6px);
+}
+
+.qs-xp-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.qs-xp-level {
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.qs-xp-text {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.qs-xp-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.qs-xp-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  transition: width 180ms ease;
+}

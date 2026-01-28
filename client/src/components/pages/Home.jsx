@@ -10,6 +10,7 @@ export default function Home() {
   const [coins, setCoins] = useState(0);
   const [catalog, setCatalog] = useState([]);
   const [inventory, setInventory] = useState([]);
+  const [stats, setStats] = useState({ level: 1, xp: 0, xpToNext: 100 });
   const [wallpaperKey, setWallpaperKey] = useState("default_wallpaper");
 
   const [viewer, setViewer] = useState(null); // whoami
@@ -65,6 +66,17 @@ export default function Home() {
       await refreshPlacedCounts();
     }
     load().catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    get("/api/user/stats").then((s) => {
+      if (!s) return;
+      setStats({
+        level: s.level ?? 1,
+        xp: s.xp ?? 0,
+        xpToNext: s.xpToNext ?? 100,
+      });
+    });
   }, []);
 
   async function saveMyName(newName) {
@@ -164,7 +176,9 @@ export default function Home() {
         onPlace={placeItem}
         onRemoveSelected={removeSelected}
         setTyping={setIsTyping}
-        level={viewer?.level ?? 1}
+        level={stats.level}
+        xp={stats.xp}
+        xpToNext={stats.xpToNext}
         wallpaperKey={wallpaperKey}
         onSetWallpaper={setRoomWallpaper}
       />

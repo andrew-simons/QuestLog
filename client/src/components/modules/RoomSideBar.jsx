@@ -16,6 +16,8 @@ export default function RoomSidebar({
   onRemoveSelected,
   setTyping,
   level,
+  xp = 0,
+  xpToNext = 100,
   wallpaperKey,
   onSetWallpaper,
 }) {
@@ -60,6 +62,7 @@ export default function RoomSidebar({
 
   const lvl = level ?? 1;
   const canUseAlt = lvl >= 5;
+  const xpPct = Math.max(0, Math.min(1, xpToNext > 0 ? xp / xpToNext : 0));
 
   return (
     <aside className="qs-shell">
@@ -120,6 +123,19 @@ export default function RoomSidebar({
             <span>coins</span>
           </div>
         </div>
+        {/* ✅ XP Bar */}
+        <div className="qs-xp">
+          <div className="qs-xp-top">
+            <span className="qs-xp-level">Level {lvl}</span>
+            <span className="qs-xp-text">
+              {xp}/{xpToNext} XP
+            </span>
+          </div>
+
+          <div className="qs-xp-bar">
+            <div className="qs-xp-fill" style={{ width: `${xpPct * 100}%` }} />
+          </div>
+        </div>
 
         <div className="qs-meta">
           <div className="qs-selected">
@@ -154,9 +170,7 @@ export default function RoomSidebar({
               </button>
 
               <button
-                className={`qs-wallpaper-btn ${
-                  wallpaperKey === "alt_wallpaper" ? "active" : ""
-                }`}
+                className={`qs-wallpaper-btn ${wallpaperKey === "alt_wallpaper" ? "active" : ""}`}
                 disabled={!canUseAlt}
                 title={!canUseAlt ? "Unlocks at level 5" : ""}
                 onClick={() => onSetWallpaper?.("alt_wallpaper")}
