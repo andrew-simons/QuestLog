@@ -111,15 +111,13 @@ const Quests = () => {
     const base = customQuests.filter((cq) => {
       const title = String(cq.title || "").toLowerCase();
       const desc = String(cq.description || "").toLowerCase();
-      const tags = (cq.tags || []).map((t) => String(t).toLowerCase()); 
+      const tags = (cq.tags || []).map((t) => String(t).toLowerCase());
       const visibility = String(cq.visibility || "public");
-
 
       if (q) {
         const hit = title.includes(q) || desc.includes(q) || tags.some((t) => t.includes(q));
         if (!hit) return false;
       }
-
 
       if (vis !== "all" && visibility !== vis) return false;
 
@@ -162,7 +160,7 @@ const Quests = () => {
     customVisFilter,
     customShowCompleted,
     customSort,
-    userQuestByCustomId, 
+    userQuestByCustomId,
   ]);
 
   const handleToggleCustomQuest = (customQuestId, isCompleted) => {
@@ -262,8 +260,8 @@ const Quests = () => {
         .filter(Boolean);
 
       const title = String(newTitle).slice(0, MAX_TITLE);
-      const tags = Array.from(new Set(rawTags)).slice(0, MAX_TAGS); 
-      const description = String(newDesc).slice(0, MAX_DESC); 
+      const tags = Array.from(new Set(rawTags)).slice(0, MAX_TAGS);
+      const description = String(newDesc).slice(0, MAX_DESC);
       const created = await post("/api/customquests", {
         title,
         description,
@@ -483,7 +481,7 @@ const Quests = () => {
         <div className="modalBackdrop" onClick={() => setShowCreateModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modalHeader">
-              <h2>Create a Custom Quest</h2>
+              <h2 className="modalTitle">Create a Custom Quest</h2>
               <button className="iconBtn" onClick={() => setShowCreateModal(false)}>
                 ✕
               </button>

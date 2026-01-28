@@ -850,3 +850,9 @@
   font-size: 12px;
   opacity: 0.75;
 }
+.modalTitle {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
