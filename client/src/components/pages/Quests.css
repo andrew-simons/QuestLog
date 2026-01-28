@@ -471,62 +471,155 @@
   color: #a05a00;
 }
 
-/* -----------------------------
-   Modal 
-   ----------------------------- */
+/* =============================
+   MODAL (Theme upgrade only)
+   ============================= */
+
 .modalBackdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
+  z-index: 999;
+
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 18px;
-  z-index: 50;
+
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(3px);
+
+  /* prevent page scroll jump */
+  overflow: auto;
 }
 
+/* main modal container */
 .modal {
-  width: min(520px, 100%);
-  background: rgba(255, 255, 255, 0.92);
-  border-radius: 16px;
-  border: var(--stroke) solid var(--ink);
+  width: min(560px, 100%);
+  max-height: min(82vh, 720px);
   overflow: hidden;
-  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.16);
+
+  /* use your global font */
+  font-family: inherit;
+  color: var(--ink);
+
+  position: relative;
+
+  border: var(--stroke) solid var(--ink);
+  border-radius: 18px;
+
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.18);
+
+  transform: rotate(-0.2deg);
 }
 
+/* subtle paper texture overlay */
+.modal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.12;
+
+  background-image: url("/img/ui/paper-texture.png");
+  background-size: 420px;
+  mix-blend-mode: multiply;
+}
+
+/* faint scribble noise overlay */
+.modal::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.08;
+
+  background-image: url("/img/ui/scribble-noise.png");
+  background-size: 360px;
+  mix-blend-mode: multiply;
+}
+
+/* header */
 .modalHeader {
+  position: relative;
+  z-index: 2;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 14px;
+  gap: 12px;
+
+  padding: 14px 16px;
+
+  background: rgba(255, 255, 255, 0.55);
   border-bottom: 2px solid rgba(0, 0, 0, 0.18);
 }
 
-.modalBody {
-  padding: 14px;
-  display: grid;
-  gap: 12px;
+.modalHeader h2 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
 }
 
+/* body */
+.modalBody {
+  position: relative;
+  z-index: 2;
+
+  padding: 14px 16px 16px;
+  display: grid;
+  gap: 12px;
+
+  overflow: auto;
+  max-height: calc(min(82vh, 720px) - 60px);
+}
+
+/* fields */
 .field {
   display: grid;
   gap: 6px;
 }
 
+.field > span {
+  font-size: 12px;
+  opacity: 0.85;
+  letter-spacing: 0.2px;
+}
+
 .field input,
 .field textarea,
 .field select {
-  border-radius: 10px;
+  font-family: inherit;
+  color: var(--ink);
+
+  border-radius: 12px;
   border: 2px solid var(--ink);
-  padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.35);
+
+  background: rgba(255, 255, 255, 0.45);
+  padding: 10px 12px;
+
+  outline: none;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.12);
+
+  transform: rotate(0.08deg);
 }
 
 .field textarea {
-  min-height: 90px;
+  min-height: 110px;
   resize: vertical;
+  line-height: 1.35;
 }
 
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  box-shadow:
+    0 0 0 3px rgba(0, 0, 0, 0.12),
+    2px 2px 0 rgba(0, 0, 0, 0.12);
+}
+
+/* footer buttons row */
 .modalFooter {
   display: flex;
   justify-content: flex-end;
@@ -534,18 +627,70 @@
   padding-top: 6px;
 }
 
+/* close button */
 .iconBtn {
-  border: 2px solid transparent;
-  background: rgba(255, 255, 255, 0.15);
+  font-family: inherit;
+  color: var(--ink);
+
+  width: 36px;
+  height: 32px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 12px;
+  border: 2px solid rgba(0, 0, 0, 0.35);
+  background: rgba(255, 255, 255, 0.35);
+
   cursor: pointer;
-  font-size: 18px;
-  opacity: 0.8;
-  border-radius: 10px;
-  padding: 4px 8px;
+  user-select: none;
+
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.12);
+  transform: rotate(0.25deg);
+  transition:
+    transform 120ms ease,
+    filter 120ms ease,
+    box-shadow 120ms ease;
 }
 
 .iconBtn:hover {
-  border-color: rgba(0, 0, 0, 0.3);
+  transform: rotate(0.25deg) translateY(-1px);
+  filter: brightness(1.02);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.14);
+}
+
+.iconBtn:active {
+  transform: rotate(0.25deg) translateY(0px);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.12);
+}
+
+/* If you already have ghostBtn styles elsewhere, this just "sketchifies" it here */
+.modal .ghostBtn {
+  font-family: inherit;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 900;
+  background: rgba(255, 255, 255, 0.25);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.12);
+  transform: rotate(0.18deg);
+  cursor: pointer;
+}
+
+/* keep primaryBtn consistent inside the modal */
+.modal .primaryBtn {
+  transform: rotate(-0.2deg);
+}
+
+/* mobile */
+@media (max-width: 520px) {
+  .modalHeader {
+    padding: 12px 12px;
+  }
+  .modalBody {
+    padding: 12px 12px 14px;
+  }
 }
 
 /* ==========================================================
