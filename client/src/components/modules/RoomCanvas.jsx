@@ -5,6 +5,8 @@ import { get, patch } from "../../utilities";
 const ROOM_W = 1000;
 const ROOM_H = 600;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const ITEM_SCALE_MIN = 0.05;
+const ITEM_SCALE_MAX = 0.8;
 
 // ---------- Floor seam (V-shape) ----------
 const SHOW_FLOOR_DEBUG = false;
@@ -283,7 +285,7 @@ export default function RoomCanvas({
       itemKey: p.itemKey,
       x: p.x,
       y: p.y,
-      scale: p.scale ?? 1.0,
+      scale: clamp(p.scale ?? 1.0, ITEM_SCALE_MIN, ITEM_SCALE_MAX),
     }));
 
     if (room?.beaver) {
@@ -554,7 +556,7 @@ export default function RoomCanvas({
 
       const delta = -e.deltaY;
       const factor = delta > 0 ? 1.06 : 0.94;
-      item.scale = clamp(item.scale * factor, 0.25, 3.0);
+      item.scale = clamp(item.scale * factor, ITEM_SCALE_MIN, ITEM_SCALE_MAX);
       scheduleSaveItem(selectedItemId);
     };
 
@@ -604,7 +606,7 @@ export default function RoomCanvas({
           const scaleSpeed = 1.4;
           const dir = keys.up ? 1 : -1;
           const mult = Math.exp(dir * scaleSpeed * dt);
-          item.scale = clamp(item.scale * mult, 0.25, 3.0);
+          item.scale = clamp(item.scale * mult, ITEM_SCALE_MIN, ITEM_SCALE_MAX);
           scheduleSaveItem(selectedItemId);
         }
       }
