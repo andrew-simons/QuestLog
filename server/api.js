@@ -8,6 +8,7 @@
 */
 
 const express = require("express");
+const mongoose = require("mongoose");
 
 // import models so we can interact with the database
 const User = require("./models/user");
@@ -264,8 +265,6 @@ router.patch("/userquests", async (req, res) => {
             return res.status(400).send({ error: "Custom quest not visible to you" });
           }
         }
-      } else {
-        // public is always ok
       }
 
       coinsAward = 0;
@@ -296,6 +295,37 @@ router.patch("/userquests", async (req, res) => {
     let currentQuestKeys = null;
 
     if (isNowCompleting) {
+      // ✅ CREATE BLANK JOURNAL ENTRY ON FIRST COMPLETION
+      if (source === "builtin") {
+        await JournalEntry.findOneAndUpdate(
+          { userId: req.user._id, source: "builtin", questKey },
+          {
+            $setOnInsert: {
+              userId: req.user._id,
+              source: "builtin",
+              questKey,
+              text: "",
+              photoUrls: [],
+            },
+          },
+          { new: true, upsert: true, runValidators: true }
+        );
+      } else {
+        await JournalEntry.findOneAndUpdate(
+          { userId: req.user._id, source: "custom", customQuestId },
+          {
+            $setOnInsert: {
+              userId: req.user._id,
+              source: "custom",
+              customQuestId,
+              text: "",
+              photoUrls: [],
+            },
+          },
+          { new: true, upsert: true, runValidators: true }
+        );
+      }
+
       const user = await User.findById(req.user._id);
       if (!user) return res.status(404).send({ error: "User not found" });
 
@@ -352,7 +382,7 @@ router.get("/journal", async (req, res) => {
   try {
     if (!req.user) return res.status(401).send({ error: "Not logged in" });
 
-    const userId = req.user._id;
+    const userId = String(req.user._id);
 
     const completed = await UserQuest.find({ userId, isCompleted: true })
       .select("source questKey customQuestId")
@@ -365,7 +395,7 @@ router.get("/journal", async (req, res) => {
 
     const customIds = completed
       .filter((d) => d.source === "custom")
-      .map((d) => String(d.customQuestId))
+      .map((d) => d.customQuestId)
       .filter(Boolean);
 
     // Fetch quest docs
@@ -413,7 +443,7 @@ router.patch("/journal", async (req, res) => {
   try {
     if (!req.user) return res.status(401).send({ error: "Not logged in" });
 
-    const userId = req.user._id;
+    const userId = String(req.user._id);
     let { source, questKey, customQuestId, text, photoUrls } = req.body;
 
     if (source !== "builtin" && source !== "custom") {
@@ -446,8 +476,9 @@ router.patch("/journal", async (req, res) => {
       if (!customQuestId || typeof customQuestId !== "string") {
         return res.status(400).send({ error: "customQuestId is required" });
       }
-      filter.customQuestId = customQuestId;
-      insert.customQuestId = customQuestId;
+      const oid = new mongoose.Types.ObjectId(customQuestId);
+      filter.customQuestId = oid;
+      insert.customQuestId = oid;
     }
 
     const doc = await JournalEntry.findOneAndUpdate(
@@ -1100,6 +1131,9 @@ router.patch("/room/beaver", async (req, res) => {
     res.status(500).send({ error: "Failed to save beaver" });
   }
 });
+
+
+
 
 module.exports = router;
 

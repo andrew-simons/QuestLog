@@ -30,7 +30,6 @@ function verify(token) {
 async function getOrCreateUser(user) {
   const existingUser = await User.findOne({ googleid: user.sub });
   if (existingUser) {
-    // backfill friendCode if older users don't have it
     if (!existingUser.friendCode) {
       existingUser.friendCode = await generateUniqueFriendCode();
       await existingUser.save();
@@ -38,38 +37,19 @@ async function getOrCreateUser(user) {
     return existingUser;
   }
 
-  // create new user with a guaranteed-unique friend code
-  const newUser = new User({
+  const newUser = await User.create({
     name: user.name,
     googleid: user.sub,
     createdAt: new Date(),
     xp: 0,
     level: 1,
     coins: 0,
-    equipped: {
-      beaverSkinId: "default",
-      hatItemId: "default",
-      roomThemeId: "default",
-    },
     friendCode: await generateUniqueFriendCode(),
     currentQuestKeys: [1, 2, 3],
-    completedQuestKeys: [],
   });
 
-  const newRoom = await Room.create({
-    ownerUserId: newUser._id, // <-- use _id consistently
-    layout: { placedItems: [] },
-    updatedAt: new Date(),
-  });
-
-  newUser.roomId = newRoom._id;
-
-  await Inventory.create({
-    userId: newUser._id,
-    itemIds: [],
-  });
-
-  return await newUser.save();
+  // ✅ Don’t create Room/Inventory here (let /api/room create it)
+  return newUser;
 }
 
 function login(req, res) {

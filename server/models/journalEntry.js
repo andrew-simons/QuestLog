@@ -12,7 +12,7 @@ const JournalEntrySchema = new mongoose.Schema(
     customQuestId: { type: mongoose.Schema.Types.ObjectId, ref: "customQuests" }, // custom
 
     text: { type: String, default: "" },
-    photoUrls: { ype: [String], default: [] },
+    photoUrls: { type: [String], default: [] },
   },
   { timestamps: true }
 );

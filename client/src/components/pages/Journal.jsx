@@ -4,6 +4,8 @@ import { UserContext } from "../App";
 import JournalCard from "../modules/JournalCard";
 import "./Journal.css";
 
+
+
 const Journal = () => {
   const { userId } = useContext(UserContext);
 
@@ -23,6 +25,18 @@ const Journal = () => {
     setLoading(true);
     get("/api/journal")
       .then(({ builtinQuests, customQuests, journals }) => {
+        console.log("journals length", (journals || []).length);
+        console.log(
+          "journals sample",
+          (journals || []).slice(0, 5).map((j) => ({
+            source: j.source,
+            questKey: j.questKey,
+            customQuestId: j.customQuestId,
+            createdAt: j.createdAt,
+            updatedAt: j.updatedAt,
+          }))
+        );
+
         const combined = [
           ...(builtinQuests || []).map((q) => ({
             source: "builtin",
@@ -97,6 +111,18 @@ const Journal = () => {
   const visibleItems = useMemo(() => {
     const s = search.trim().toLowerCase();
 
+    // console.log(
+    //   completedQuests.map((it) => {
+    //     const j = getJournalFor(it);
+    //     return {
+    //       key: `${it.source}:${it.id}`,
+    //       title: it.title,
+    //       createdAt: j?.createdAt,
+    //       ms: j?.createdAt ? new Date(j.createdAt).getTime() : 0,
+    //     };
+    //   })
+    // );
+
     return completedQuests
       .filter((it) => {
         if (filterSource !== "all" && it.source !== filterSource) return false;
@@ -107,33 +133,47 @@ const Journal = () => {
         );
       })
       .sort((a, b) => {
-        if (sortBy === "alpha") return (a.title || "").localeCompare(b.title || "");
+        if (sortBy === "alpha") {
+          return (a.title || "").localeCompare(b.title || "");
+        }
+
+        // recent
         const ja = getJournalFor(a);
         const jb = getJournalFor(b);
-        const ta = ja?.updatedAt ? new Date(ja.updatedAt).getTime() : 0;
-        const tb = jb?.updatedAt ? new Date(jb.updatedAt).getTime() : 0;
+
+        const ta = ja?.createdAt ? new Date(ja.createdAt).getTime() : 0;
+        const tb = jb?.createdAt ? new Date(jb.createdAt).getTime() : 0;
+
+        // If BOTH have no timestamps, don't reorder them
+        if (ta === 0 && tb === 0) return 0;
+
+        // Put items WITH timestamps first
+        if (ta === 0) return 1;
+        if (tb === 0) return -1;
+
+        // Newest first
         return tb - ta;
       });
-  }, [completedQuests, filterSource, search, sortBy]); 
+  }, [completedQuests, filterSource, search, sortBy]);
 
   const stats = useMemo(() => {
     const total = completedQuests.length;
     const shown = visibleItems.length;
-    const withText = visibleItems.filter((it) => (getJournalFor(it)?.text || "").trim().length > 0)
-      .length;
-    const withPhotos = visibleItems.filter((it) => (getJournalFor(it)?.photoUrls || []).length > 0)
-      .length;
+    const withText = visibleItems.filter(
+      (it) => (getJournalFor(it)?.text || "").trim().length > 0
+    ).length;
+    const withPhotos = visibleItems.filter(
+      (it) => (getJournalFor(it)?.photoUrls || []).length > 0
+    ).length;
     return { total, shown, withText, withPhotos };
-  }, [completedQuests.length, visibleItems]); 
+  }, [completedQuests.length, visibleItems]);
 
   return (
     <div className="jrPage">
       <div className="jrHero">
         <div>
           <h1 className="jrH1">Journal</h1>
-          <div className="jrSubtitle">
-            Write about your experiences side questing here! :D
-          </div>
+          <div className="jrSubtitle">Write about your experiences side questing here! :D</div>
         </div>
 
         <div className="jrStats">
@@ -166,7 +206,12 @@ const Journal = () => {
             placeholder="Search titles + descriptions…"
           />
           {search.trim() && (
-            <button className="jrClear" type="button" onClick={() => setSearch("")} aria-label="Clear">
+            <button
+              className="jrClear"
+              type="button"
+              onClick={() => setSearch("")}
+              aria-label="Clear"
+            >
               ×
             </button>
           )}
