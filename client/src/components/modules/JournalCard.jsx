@@ -28,16 +28,17 @@ const JournalCard = (props) => {
 
   return (
     <div className="jrList">
-      {props.completedQuests.map((item) => {
+      {props.completedQuests.map((item, idx) => {
         const key = `${item.source}:${String(item.id)}`;
         return (
-          <SingleJournalBlock
-            key={key}
-            item={item}
-            journal={props.getJournalFor(item)}
-            onSave={(updates) => props.onSaveJournal(item, updates)}
-            saving={props.savingKey === key}
-          />
+          <div key={key} style={{ animationDelay: `${Math.min(idx, 10) * 35}ms` }}>
+            <SingleJournalBlock
+              item={item}
+              journal={props.getJournalFor(item)}
+              onSave={(updates) => props.onSaveJournal(item, updates)}
+              saving={props.savingKey === key}
+            />
+          </div>
         );
       })}
     </div>

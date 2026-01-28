@@ -984,14 +984,25 @@ router.get("/friends", async (req, res) => {
   const edges = await Friendship.find({
     status: "accepted",
     $or: [{ requester: req.user._id }, { recipient: req.user._id }],
-  }).populate("requester recipient", "name friendCode xp coins level"); // ✅ add these
+  }).populate("requester recipient", "name friendCode xp coins level");
 
-  const friends = edges.map((e) => {
-    const requesterIsMe = e.requester._id.equals(req.user._id);
-    return requesterIsMe ? e.recipient : e.requester;
-  });
+  const me = String(req.user._id);
 
-  res.send(friends);
+  // build unique friends by _id
+  const uniq = new Map();
+
+  for (const e of edges) {
+    const requesterId = String(e.requester?._id ?? e.requester);
+    const recipientId = String(e.recipient?._id ?? e.recipient);
+
+    const other = requesterId === me ? e.recipient : e.requester;
+    const otherId = String(other?._id ?? other);
+
+    if (!otherId || otherId === me) continue;
+    uniq.set(otherId, other);
+  }
+
+  res.send([...uniq.values()]);
 });
 
 /*

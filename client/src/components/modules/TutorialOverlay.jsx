@@ -46,7 +46,7 @@ const STEPS = [
 ];
 
 export default function TutorialOverlay() {
-  const { me, setMe } = useContext(UserContext);
+  const { me, setMe, setIsTyping } = useContext(UserContext);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -170,6 +170,8 @@ export default function TutorialOverlay() {
               onChange={(e) => setNameDraft(e.target.value)}
               placeholder="e.g., Maple"
               maxLength={14}
+              onFocus={() => setIsTyping(true)}
+              onBlur={() => setIsTyping(false)}
               disabled={saving}
               onKeyDown={(e) => e.key === "Enter" && handleSaveNameAndContinue()}
             />

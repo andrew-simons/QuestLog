@@ -4,9 +4,11 @@ const badgeStyle = {
   fontSize: 12,
   padding: "6px 10px",
   borderRadius: 999,
-  border: "1px solid rgba(0,0,0,0.08)",
-  background: "rgba(255,255,255,0.7)",
-  backdropFilter: "blur(6px)",
+  border: "1px solid rgba(0,0,0,0.10)",
+  background: "rgba(255,255,255,0.78)",
+  backdropFilter: "blur(8px)",
+  fontWeight: 800,
+  color: "rgba(0,0,0,0.72)",
 };
 
 const Icon = ({ name }) => {
@@ -131,6 +133,9 @@ const SingleJournalBlock = ({ item, journal, onSave, saving }) => {
     JSON.stringify(draftPhotos || []) !== JSON.stringify(journal?.photoUrls || []) ||
     selectedFiles.length > 0;
 
+  const hasAnyContent =
+    (draftText || "").trim().length > 0 || (draftPhotos || []).length > 0 || selectedFiles.length > 0;
+
   const handleSave = () => {
     setStatus("");
     return onSave({ text: draftText, photoUrls: draftPhotos, files: selectedFiles })
@@ -198,11 +203,15 @@ const SingleJournalBlock = ({ item, journal, onSave, saving }) => {
           <div className="jbRightMeta">
             {dirty && <span className="jbDirtyDot" title="Unsaved changes" />}
             {status === "Saved" && (
-              <span className="jbStatus ok">
+              <span className="jbStatus ok" title="Saved">
                 <Icon name="check" /> Saved
               </span>
             )}
-            {status === "Save failed" && <span className="jbStatus bad">Save failed</span>}
+            {status === "Save failed" && (
+              <span className="jbStatus bad" title="Save failed">
+                Save failed
+              </span>
+            )}
           </div>
         </div>
 
@@ -218,6 +227,9 @@ const SingleJournalBlock = ({ item, journal, onSave, saving }) => {
           )}
 
           {meta.updated && <span style={badgeStyle}>Updated: {meta.updated}</span>}
+          {selectedFiles.length > 0 && (
+            <span style={badgeStyle}>{selectedFiles.length} new photo(s) selected</span>
+          )}
         </div>
 
         {item.description && <div className="jbDesc">{item.description}</div>}
@@ -240,6 +252,7 @@ const SingleJournalBlock = ({ item, journal, onSave, saving }) => {
         <div className="jbPhotosSection">
           <div className="jbPhotosTop">
             <label className="jbLabel">Photos</label>
+            <div className="jbHint">Up to 6 images per save.</div>
           </div>
 
           <div className="jbPhotoInputRow">
@@ -261,12 +274,6 @@ const SingleJournalBlock = ({ item, journal, onSave, saving }) => {
               onChange={onPickFiles}
               style={{ display: "none" }}
             />
-
-            {selectedFiles.length > 0 && (
-              <span className="jbHint" style={{ marginLeft: 10 }}>
-                {selectedFiles.length} selected
-              </span>
-            )}
           </div>
 
           {/* Previews for newly selected files */}
@@ -279,7 +286,7 @@ const SingleJournalBlock = ({ item, journal, onSave, saving }) => {
                     className="jbImgRemove"
                     type="button"
                     onClick={() => removeSelectedFile(idx)}
-                    aria-label="Remove"
+                    aria-label="Remove selected photo"
                     title="Remove"
                   >
                     ×
@@ -299,7 +306,7 @@ const SingleJournalBlock = ({ item, journal, onSave, saving }) => {
                     className="jbImgRemove"
                     type="button"
                     onClick={() => removeSavedPhoto(url)}
-                    aria-label="Remove"
+                    aria-label="Remove saved photo"
                     title="Remove"
                   >
                     ×
@@ -322,9 +329,8 @@ const SingleJournalBlock = ({ item, journal, onSave, saving }) => {
             className="jbBtn primary"
             type="button"
             onClick={handleSave}
-            disabled={
-              saving || (!dirty && (draftText || "").length === 0 && draftPhotos.length === 0)
-            }
+            disabled={saving || (!dirty && !hasAnyContent)}
+            title={dirty ? "Save changes" : "Nothing new to save"}
           >
             <Icon name="save" />
             {saving ? "Saving…" : "Save"}

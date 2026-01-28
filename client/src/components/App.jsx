@@ -22,6 +22,7 @@ const App = () => {
 
   // show splash while checking session
   const [authLoading, setAuthLoading] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
 
   // Check existing session once on page load
   useEffect(() => {
@@ -87,8 +88,10 @@ const App = () => {
       handleLogin,
       handleLogout,
       authLoading,
+      isTyping,
+      setIsTyping,
     }),
-    [me, authLoading]
+    [me, authLoading, isTyping]
   );
 
   // 1) Loading gate FIRST: prevents login flash on refresh

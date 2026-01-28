@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { GoogleLogin, googleLogout } from "@react-oauth/google";
 
 import "../../utilities.css";
@@ -7,39 +7,51 @@ import { UserContext } from "../App";
 
 const Skeleton = () => {
   const { userId, handleLogin, handleLogout } = useContext(UserContext);
+
+  // Show a loading screen briefly (or until userId resolves)
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // If userId becomes defined (logged in OR confirmed logged out), stop loading.
+    // In your app, userId starts as undefined and becomes either an id or null/falsey.
+    if (userId !== undefined) setLoading(false);
+  }, [userId]);
+
+  if (loading) {
+    return (
+      <div className="loadingPage">
+        <div className="loadingCard">
+          <div className="loadingSpinner" />
+          <h1 className="loadingTitle">QuestLog</h1>
+          <p className="loadingSub">Loading your world…</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <>
-      {userId ? (
-        <button
-          onClick={() => {
-            googleLogout();
-            handleLogout();
-          }}
-        >
-          Logout
-        </button>
-      ) : (
-        <GoogleLogin onSuccess={handleLogin} onError={(err) => console.log(err)} />
-      )}
-      <h1>Good luck on your project :)</h1>
-      <h2> What you need to change in this skeleton</h2>
-      <ul>
-        <li>
-          Change the Frontend CLIENT_ID (index.jsx) to your team's CLIENT_ID (obtain this at
-          http://weblab.is/clientid)
-        </li>
-        <li>Change the Server CLIENT_ID to the same CLIENT_ID (auth.js)</li>
-        <li>
-          Change the Database SRV (mongoConnectionURL) for Atlas (server.js). You got this in the
-          MongoDB setup.
-        </li>
-        <li>Change the Database Name for MongoDB to whatever you put in the SRV (server.js)</li>
-      </ul>
-      <h2>How to go from this skeleton to our actual app</h2>
-      <a href="https://docs.google.com/document/d/110JdHAn3Wnp3_AyQLkqH2W8h5oby7OVsYIeHYSiUzRs/edit?usp=sharing">
-        Check out this getting started guide
-      </a>
-    </>
+    <div className="loadingPage">
+      <div className="loadingCard">
+        <h1 className="loadingTitle">QuestLog</h1>
+
+        {userId ? (
+          <button
+            className="btn"
+            onClick={() => {
+              googleLogout();
+              handleLogout();
+            }}
+          >
+            Logout
+          </button>
+        ) : (
+          <div className="loginWrap">
+            <p className="loadingSub">Sign in to continue</p>
+            <GoogleLogin onSuccess={handleLogin} onError={(err) => console.log(err)} />
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

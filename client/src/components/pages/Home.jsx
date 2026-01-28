@@ -1,10 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useContext } from "react";
 import { get, post, del, patch } from "../../utilities";
 import RoomCanvas from "../modules/RoomCanvas";
 import { socket } from "../../client-socket";
 import RoomSidebar from "../modules/RoomSideBar";
+import { UserContext } from "../App";
 
 export default function Home() {
+  const { isTyping, setIsTyping } = useContext(UserContext);
+
   const [selected, setSelected] = useState(null);
 
   const [coins, setCoins] = useState(0);
@@ -18,7 +21,6 @@ export default function Home() {
 
   const [placedCounts, setPlacedCounts] = useState(new Map());
   const [reloadToken, setReloadToken] = useState(0);
-  const [isTyping, setIsTyping] = useState(false);
 
   const catalogByKey = useMemo(() => {
     const m = new Map();
@@ -28,11 +30,10 @@ export default function Home() {
 
   const ownedQty = (itemKey) => inventory.find((r) => r.itemKey === itemKey)?.qty || 0;
 
-  const isOwner = true; // Home is always your room
-
   async function refreshPlacedCounts() {
     const room = await get("/api/room");
     setWallpaperKey(room?.wallpaperKey || "default_wallpaper");
+
     const m = new Map();
     for (const p of room?.placedItems || []) {
       m.set(p.itemKey, (m.get(p.itemKey) || 0) + 1);
@@ -65,7 +66,9 @@ export default function Home() {
 
       await refreshPlacedCounts();
     }
+
     load().catch(console.error);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

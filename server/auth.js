@@ -8,7 +8,7 @@ const userQuests = require("./models/userQuests");
 
 const socketManager = require("./server-socket");
 const Friendship = require("./models/friendship");
-const DEFAULT_FRIEND_IDS = ["PUT_USER_ID_1_HERE", "PUT_USER_ID_2_HERE"];
+const DEFAULT_FRIEND_IDS = ["6979c819622b297daa3b514d", "6979c8b1622b297daa3b5191"];
 
 // create a new OAuth client used to verify google sign-in
 //    TODO: replace with your own CLIENT_ID
@@ -34,6 +34,8 @@ async function addDefaultFriendsForNewUser(newUserId) {
     .lean();
 
   const ids = existing.map((u) => String(u._id));
+  console.log("DEFAULT_FRIEND_IDS", DEFAULT_FRIEND_IDS);
+  console.log("existing defaults found:", existing);
 
   // 2) build the two-way accepted edges
   const docs = [];

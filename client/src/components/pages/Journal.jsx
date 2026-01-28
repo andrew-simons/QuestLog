@@ -37,18 +37,6 @@ const Journal = () => {
     setLoading(true);
     get("/api/journal")
       .then(({ builtinQuests, customQuests, journals }) => {
-        console.log("journals length", (journals || []).length);
-        console.log(
-          "journals sample",
-          (journals || []).slice(0, 5).map((j) => ({
-            source: j.source,
-            questKey: j.questKey,
-            customQuestId: j.customQuestId,
-            createdAt: j.createdAt,
-            updatedAt: j.updatedAt,
-          }))
-        );
-
         const combined = [
           ...(builtinQuests || []).map((q) => ({
             source: "builtin",
@@ -134,18 +122,6 @@ const Journal = () => {
   const visibleItems = useMemo(() => {
     const s = search.trim().toLowerCase();
 
-    // console.log(
-    //   completedQuests.map((it) => {
-    //     const j = getJournalFor(it);
-    //     return {
-    //       key: `${it.source}:${it.id}`,
-    //       title: it.title,
-    //       createdAt: j?.createdAt,
-    //       ms: j?.createdAt ? new Date(j.createdAt).getTime() : 0,
-    //     };
-    //   })
-    // );
-
     return completedQuests
       .filter((it) => {
         if (filterSource !== "all" && it.source !== filterSource) return false;
@@ -156,28 +132,20 @@ const Journal = () => {
         );
       })
       .sort((a, b) => {
-        if (sortBy === "alpha") {
-          return (a.title || "").localeCompare(b.title || "");
-        }
+        if (sortBy === "alpha") return (a.title || "").localeCompare(b.title || "");
 
-        // recent
         const ja = getJournalFor(a);
         const jb = getJournalFor(b);
 
         const ta = ja?.createdAt ? new Date(ja.createdAt).getTime() : 0;
         const tb = jb?.createdAt ? new Date(jb.createdAt).getTime() : 0;
 
-        // If BOTH have no timestamps, don't reorder them
         if (ta === 0 && tb === 0) return 0;
-
-        // Put items WITH timestamps first
         if (ta === 0) return 1;
         if (tb === 0) return -1;
-
-        // Newest first
         return tb - ta;
       });
-  }, [completedQuests, filterSource, search, sortBy]);
+  }, [completedQuests, filterSource, search, sortBy]); // getJournalFor reads state but stable enough for UI sorting
 
   const stats = useMemo(() => {
     const total = completedQuests.length;
@@ -189,17 +157,17 @@ const Journal = () => {
       (it) => (getJournalFor(it)?.photoUrls || []).length > 0
     ).length;
     return { total, shown, withText, withPhotos };
-  }, [completedQuests.length, visibleItems]);
+  }, [completedQuests.length, visibleItems]); // counts recompute when visible changes
 
   return (
     <div className="jrPage">
       <div className="jrHero">
-        <div>
+        <div className="jrHeroLeft">
           <h1 className="jrH1">Journal</h1>
           <div className="jrSubtitle">Write about your experiences side questing here! :D</div>
         </div>
 
-        <div className="jrStats">
+        <div className="jrStats" aria-label="Journal stats">
           <div className="jrStat">
             <div className="jrStatNum">{stats.total}</div>
             <div className="jrStatLbl">Completed</div>
@@ -221,7 +189,9 @@ const Journal = () => {
 
       <div className="jrControls">
         <div className="jrSearchWrap">
-          <span className="jrSearchIcon">⌕</span>
+          <span className="jrSearchIcon" aria-hidden="true">
+            ⌕
+          </span>
           <input
             className="jrSearch"
             value={search}
@@ -233,14 +203,15 @@ const Journal = () => {
               className="jrClear"
               type="button"
               onClick={() => setSearch("")}
-              aria-label="Clear"
+              aria-label="Clear search"
+              title="Clear"
             >
               ×
             </button>
           )}
         </div>
 
-        <div className="jrPills">
+        <div className="jrPills" role="tablist" aria-label="Filter">
           <button
             className={`jrPill ${filterSource === "all" ? "active" : ""}`}
             type="button"
@@ -265,8 +236,15 @@ const Journal = () => {
         </div>
 
         <div className="jrSelectWrap">
-          <label className="jrSelectLabel">Sort</label>
-          <select className="jrSelect" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+          <label className="jrSelectLabel" htmlFor="jrSort">
+            Sort
+          </label>
+          <select
+            id="jrSort"
+            className="jrSelect"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+          >
             <option value="recent">Most recent</option>
             <option value="alpha">A → Z</option>
           </select>
