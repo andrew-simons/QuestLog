@@ -17,6 +17,16 @@ const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, "postmessage");
 console.log("GOOGLE_CLIENT_SECRET present?", !!process.env.GOOGLE_CLIENT_SECRET);
 
+const CURRENT_USER_SCHEMA_VERSION = 1;
+const USER_DEFAULTS = {
+  xp: 0,
+  level: 1,
+  coins: 0,
+  tutorialStep: 0,
+  tutorialDone: false,
+  currentQuestKeys: [1, 2, 3],
+};
+
 // accepts a login token from the frontend, and verifies that it's legit
 function verify(token) {
   return client
@@ -27,42 +37,40 @@ function verify(token) {
     .then((ticket) => ticket.getPayload());
 }
 
-async function addDefaultFriendsForNewUser(newUserId) {
-  // 1) keep only defaults that exist in DB
-  const existing = await User.find({ _id: { $in: DEFAULT_FRIEND_IDS } })
-    .select("_id")
-    .lean();
+async function migrateUserIfNeeded(u) {
+  let changed = false;
 
-  const ids = existing.map((u) => String(u._id));
-  console.log("DEFAULT_FRIEND_IDS", DEFAULT_FRIEND_IDS);
-  console.log("existing defaults found:", existing);
-
-  // 2) build the two-way accepted edges
-  const docs = [];
-  for (const fid of ids) {
-    if (String(fid) === String(newUserId)) continue;
-
-    docs.push({ requester: newUserId, recipient: fid, status: "accepted" });
-    docs.push({ requester: fid, recipient: newUserId, status: "accepted" });
+  if (u.schemaVersion == null) {
+    u.schemaVersion = 0;
+    changed = true;
   }
 
-  if (!docs.length) return;
-
-  try {
-    await Friendship.insertMany(docs, { ordered: false });
-  } catch (err) {
-    if (err.code !== 11000) throw err; // ignore dupes
+  for (const [k, v] of Object.entries(USER_DEFAULTS)) {
+    if (u[k] === undefined) {
+      u[k] = v;
+      changed = true;
+    }
   }
+
+  if (!u.friendCode) {
+    u.friendCode = await generateUniqueFriendCode();
+    changed = true;
+  }
+
+  if (u.schemaVersion !== CURRENT_USER_SCHEMA_VERSION) {
+    u.schemaVersion = CURRENT_USER_SCHEMA_VERSION;
+    changed = true;
+  }
+
+  if (changed) await u.save();
+  return u;
 }
 
-// gets user from DB, or makes a new account AND other DBs if it doesn't exist yet
 async function getOrCreateUser(user) {
-  const existingUser = await User.findOne({ googleid: user.sub });
+  let existingUser = await User.findOne({ googleid: user.sub });
+
   if (existingUser) {
-    if (!existingUser.friendCode) {
-      existingUser.friendCode = await generateUniqueFriendCode();
-      await existingUser.save();
-    }
+    existingUser = await migrateUserIfNeeded(existingUser);
     return existingUser;
   }
 
@@ -70,13 +78,9 @@ async function getOrCreateUser(user) {
     name: user.name,
     googleid: user.sub,
     createdAt: new Date(),
-    xp: 0,
-    level: 1,
-    coins: 0,
     friendCode: await generateUniqueFriendCode(),
-    currentQuestKeys: [1, 2, 3],
-    tutorialStep: 0,
-    tutorialDone: false,
+    schemaVersion: CURRENT_USER_SCHEMA_VERSION,
+    ...USER_DEFAULTS,
   });
 
   await addDefaultFriendsForNewUser(newUser._id);

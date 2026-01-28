@@ -24,6 +24,8 @@ const UserSchema = new mongoose.Schema({
   // tutorial
   tutorialStep: { type: Number, default: 0 },
   tutorialDone: { type: Boolean, default: false },
+
+  schemaVersion: { type: Number, default: 0 },
 });
 
 // compile model from schema
