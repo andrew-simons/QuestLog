@@ -332,7 +332,11 @@ const Quests = () => {
                 </select>
               </label>
 
-              <button onClick={refreshQuests} disabled={refreshing} className="primaryBtn">
+              <button
+                onClick={refreshQuests}
+                disabled={refreshing}
+                className="primaryBtn btnGold btnSubtle"
+              >
                 {refreshing ? "Refreshing..." : "Refresh"}
               </button>
             </div>
@@ -358,7 +362,10 @@ const Quests = () => {
               <p className="panelSub">Community-made • always 20 XP • no coins</p>
             </div>
 
-            <button className="primaryBtn" onClick={() => setShowCreateModal(true)}>
+            <button
+              className="primaryBtn btnGold btnStrong"
+              onClick={() => setShowCreateModal(true)}
+            >
               + New
             </button>
           </div>
@@ -581,10 +588,6 @@ const Quests = () => {
           </div>
         </div>
       )}
-      {/* <div className="debugStack">
-        <img className="dbg" src="/img/ui/torn-mask.svg" />
-        <img className="dbg" src="/img/ui/torn-outline.svg" />
-      </div> */}
     </div>
   );
 };

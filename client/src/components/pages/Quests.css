@@ -616,6 +616,69 @@
   background-size: 100% 100%;
 }
 
+/* ==========================================================
+   QuestLog Buttons (sketch theme)
+   ========================================================== */
+
+/* Base button look (used by primaryBtn + ghostBtn if you want) */
+.primaryBtn {
+  appearance: none;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+
+  background: rgba(255, 255, 255, 0.35);
+  color: var(--ink);
+
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.14);
+  transform: rotate(-0.25deg);
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    filter 120ms ease;
+
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.primaryBtn:hover:not(:disabled) {
+  transform: rotate(-0.25deg) translateY(-1px);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.16);
+  filter: brightness(1.02);
+}
+
+.primaryBtn:active:not(:disabled) {
+  transform: rotate(-0.25deg) translateY(0px);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.14);
+}
+
+.primaryBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Golden accent variant (highlighter / sticky-note vibe) */
+.btnGold {
+  background: linear-gradient(180deg, rgba(255, 229, 153, 0.95), rgba(244, 199, 81, 0.95));
+  border-color: rgba(0, 0, 0, 0.88);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.16);
+}
+
+.btnGold:hover:not(:disabled) {
+  filter: saturate(1.06) brightness(1.03);
+}
+
+.btnGold.btnSubtle {
+  background: linear-gradient(180deg, rgba(255, 229, 153, 0.78), rgba(244, 199, 81, 0.78));
+}
+
+.btnGold.btnStrong {
+  background: linear-gradient(180deg, rgba(255, 236, 179, 1), rgba(244, 199, 81, 1));
+}
+
 /* -----------------------------
    Debug helper
    ----------------------------- */

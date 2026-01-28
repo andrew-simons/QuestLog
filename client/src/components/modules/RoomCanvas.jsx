@@ -39,7 +39,16 @@ function useAssets() {
       beaver2: "/img/sprite_sheets/beaver3_ss.png",
       beaver3: "/img/sprite_sheets/beaver4_ss.png",
 
-      chair: "/img/items/chair.png",
+      bananas: "/img/items/bananas.png",
+      beanbag_chair: "/img/items/beanbag_chair.png",
+      books: "/img/items/books.png",
+      oval_table: "/img/items/oval_table.png",
+      pirate_hat: "/img/items/pirate_hat.png",
+      plant: "/img/items/plant.png",
+      polaroids: "/img/items/polaroids.png",
+      rubber_duck: "/img/items/rubber_duck.png",
+      squishmallow: "/img/items/squishmallow.png",
+      trophy: "/img/items/trophy.png",
     }),
     []
   );
