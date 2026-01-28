@@ -7,7 +7,8 @@ const Inventory = require("./models/inventory");
 const userQuests = require("./models/userQuests");
 
 const socketManager = require("./server-socket");
-const friendship = require("./models/friendship");
+const Friendship = require("./models/friendship");
+const DEFAULT_FRIEND_IDS = ["PUT_USER_ID_1_HERE", "PUT_USER_ID_2_HERE"];
 
 // create a new OAuth client used to verify google sign-in
 //    TODO: replace with your own CLIENT_ID
@@ -24,6 +25,32 @@ function verify(token) {
       audience: CLIENT_ID,
     })
     .then((ticket) => ticket.getPayload());
+}
+
+async function addDefaultFriendsForNewUser(newUserId) {
+  // 1) keep only defaults that exist in DB
+  const existing = await User.find({ _id: { $in: DEFAULT_FRIEND_IDS } })
+    .select("_id")
+    .lean();
+
+  const ids = existing.map((u) => String(u._id));
+
+  // 2) build the two-way accepted edges
+  const docs = [];
+  for (const fid of ids) {
+    if (String(fid) === String(newUserId)) continue;
+
+    docs.push({ requester: newUserId, recipient: fid, status: "accepted" });
+    docs.push({ requester: fid, recipient: newUserId, status: "accepted" });
+  }
+
+  if (!docs.length) return;
+
+  try {
+    await Friendship.insertMany(docs, { ordered: false });
+  } catch (err) {
+    if (err.code !== 11000) throw err; // ignore dupes
+  }
 }
 
 // gets user from DB, or makes a new account AND other DBs if it doesn't exist yet
@@ -46,9 +73,11 @@ async function getOrCreateUser(user) {
     coins: 0,
     friendCode: await generateUniqueFriendCode(),
     currentQuestKeys: [1, 2, 3],
+    tutorialStep: 0,
+    tutorialDone: false,
   });
 
-  // ✅ Don’t create Room/Inventory here (let /api/room create it)
+  await addDefaultFriendsForNewUser(newUser._id);
   return newUser;
 }
 

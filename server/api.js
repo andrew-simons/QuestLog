@@ -1141,6 +1141,37 @@ router.post("/upload", upload.array("photos", 6), (req, res) => {
   res.send({ urls });
 });
 
+router.patch("/me/onboarding", async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).send({ error: "Not logged in" });
+
+    const $set = {};
+
+    if (req.body.tutorialStep !== undefined) {
+      const step = Number(req.body.tutorialStep);
+      if (!Number.isInteger(step) || step < 0) {
+        return res.status(400).send({ error: "tutorialStep must be a non-negative integer" });
+      }
+      $set.tutorialStep = step;
+    }
+
+    if (req.body.tutorialDone !== undefined) {
+      if (typeof req.body.tutorialDone !== "boolean") {
+        return res.status(400).send({ error: "tutorialDone must be boolean" });
+      }
+      $set.tutorialDone = req.body.tutorialDone;
+    }
+
+    const updated = await User.findByIdAndUpdate(req.user._id, { $set }, { new: true }).lean();
+
+    req.session.user = updated; // keep session synced
+    res.send(updated);
+  } catch (e) {
+    console.log(e);
+    res.status(500).send({ error: "Failed to update onboarding" });
+  }
+});
+
 // anything else falls to this "not found" case
 router.all("*", (req, res) => {
   console.log(`API route not found: ${req.method} ${req.url}`);

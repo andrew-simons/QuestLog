@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useContext } from "react";
 import { Link } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 
@@ -7,7 +7,20 @@ import "./NavBar.css";
 import { UserContext } from "../App";
 
 const NavBar = () => {
-  const { userId, handleLogin, handleLogout } = useContext(UserContext);
+  const { userId, me, handleLogin, handleLogout } = useContext(UserContext);
+
+  const STEP_TO_TAB = {
+    1: "home",
+    2: "quests",
+    3: "journal",
+    4: "friends",
+  };
+
+  const tutorialStep = me?.tutorialDone ? null : me?.tutorialStep;
+  const highlightedTab = STEP_TO_TAB[tutorialStep] || null;
+
+  const tabClass = (tabKey) =>
+    `NavBar-link sketchTab ${highlightedTab === tabKey ? "sketchTab--highlight" : ""}`;
 
   return (
     <nav className="NavBar-container sketchNav">
@@ -16,16 +29,16 @@ const NavBar = () => {
       </div>
 
       <div className="NavBar-linkContainer sketchTabs">
-        <Link to="/home" className="NavBar-link sketchTab">
+        <Link to="/home" className={tabClass("home")}>
           Home
         </Link>
-        <Link to="/quests" className="NavBar-link sketchTab">
+        <Link to="/quests" className={tabClass("quests")}>
           Quests
         </Link>
-        <Link to="/journal" className="NavBar-link sketchTab">
+        <Link to="/journal" className={tabClass("journal")}>
           Journal
         </Link>
-        <Link to="/friends" className="NavBar-link sketchTab">
+        <Link to="/friends" className={tabClass("friends")}>
           Social
         </Link>
 

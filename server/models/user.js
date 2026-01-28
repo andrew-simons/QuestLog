@@ -20,6 +20,10 @@ const UserSchema = new mongoose.Schema({
   currentQuestKeys: Array,
   completedQuestKeys: Array,
   roomId: String,
+
+  // tutorial
+  tutorialStep: { type: Number, default: 0 },
+  tutorialDone: { type: Boolean, default: false },
 });
 
 // compile model from schema

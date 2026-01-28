@@ -176,7 +176,7 @@ export default function Friends() {
 
       <header className="friendsHeader">
         <div>
-          <h1 className="friendsTitle">Friends</h1>
+          <h1 className="friendsTitle">Social</h1>
           <p className="friendsSubtitle">Share your friend code or add someone else’s.</p>
         </div>
         <button className="btn btnGhost" onClick={refreshAll}>

@@ -1,0 +1,209 @@
+/* Fullscreen dim */
+.tutorial-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 12, 14, 0.52);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 9999;
+}
+
+/* The sketch card */
+.tutorial-card {
+  width: min(720px, 96vw);
+  border-radius: 18px;
+
+  /* paper-ish texture without images */
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0) 55%),
+    radial-gradient(circle at 80% 0%, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.90));
+
+  border: 2px solid var(--ink);
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.18);
+
+  padding: 18px 18px 16px;
+  backdrop-filter: blur(10px);
+  transform: rotate(-0.25deg);
+}
+
+/* Header */
+.tutorial-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.tutorial-kicker {
+  font-size: 12px;
+  opacity: 0.65;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+
+.tutorial-title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: 0.2px;
+  color: var(--ink);
+}
+
+/* Body copy */
+.tutorial-body {
+  margin: 10px 0 0;
+  opacity: 0.92;
+  line-height: 1.55;
+  font-size: 15.5px;
+  color: var(--ink);
+}
+
+/* Step 0 input block */
+.tutorial-inputBlock {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 2px dashed rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.tutorial-inputBlock label {
+  display: block;
+  font-size: 13px;
+  opacity: 0.85;
+  margin-bottom: 8px;
+  color: var(--ink);
+}
+
+.tutorial-inputBlock input {
+  width: 100%;
+  padding: 12px 12px;
+  border-radius: 12px;
+  border: 2px solid rgba(0, 0, 0, 0.22);
+  font-size: 15px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  outline: none;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.10);
+}
+
+.tutorial-inputBlock input:focus {
+  border-color: rgba(0, 0, 0, 0.40);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.14);
+}
+
+.tutorial-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  opacity: 0.72;
+}
+
+/* Route hint */
+.tutorial-routeHint {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.04);
+  border: 2px solid rgba(0, 0, 0, 0.12);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.tutorial-routeHint button {
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 2px solid var(--ink);
+  background: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.12);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.tutorial-routeHint button:hover {
+  transform: translateY(-1px) rotate(0.15deg);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.16);
+}
+
+/* Error */
+.tutorial-error {
+  margin-top: 12px;
+  color: #8b0000;
+  font-size: 13px;
+  border-left: 4px solid rgba(139, 0, 0, 0.55);
+  padding-left: 10px;
+}
+
+/* Footer */
+.tutorial-footer {
+  margin-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Progress pill */
+.tutorial-progress {
+  font-size: 12px;
+  opacity: 0.8;
+  color: var(--ink);
+  border: 2px solid rgba(0, 0, 0, 0.16);
+  background: rgba(255, 255, 255, 0.55);
+  padding: 6px 10px;
+  border-radius: 999px;
+  transform: rotate(0.2deg);
+}
+
+/* Primary CTA button */
+.tutorial-primary {
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 2px solid var(--ink);
+  background: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.16);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.tutorial-primary:hover {
+  transform: translateY(-1px) rotate(0.2deg);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.20);
+}
+
+.tutorial-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Skip link (still visible but not distracting) */
+.tutorial-skip {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  text-decoration: underline;
+  opacity: 0.75;
+  color: var(--ink);
+  padding: 6px 6px;
+}
+
+.tutorial-skip:hover {
+  opacity: 0.95;
+}
+.tutorial-divider {
+  height: 1px;
+  background: rgba(0,0,0,0.12);
+  margin: 10px 0 4px;
+}

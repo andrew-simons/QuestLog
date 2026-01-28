@@ -10,14 +10,15 @@ import { get, post } from "../utilities";
 import NavBar from "./modules/NavBar";
 import Login from "./pages/Login";
 import LoadingGate from "./pages/LoadingGate"; // make this component
+import TutorialOverlay from "./modules/TutorialOverlay";
 
 export const UserContext = createContext(null);
 
 const App = () => {
   const navigate = useNavigate();
 
-  // null = not logged in, string = logged in
-  const [userId, setUserId] = useState(null);
+  // me = null means not logged in; otherwise it's the user object
+  const [me, setMe] = useState(null); // full user doc, or null
 
   // show splash while checking session
   const [authLoading, setAuthLoading] = useState(true);
@@ -30,10 +31,10 @@ const App = () => {
       try {
         const user = await get("/api/whoami");
         if (!alive) return;
-        setUserId(user?._id ?? null);
+        setMe(user?._id ? user : null);
       } catch (e) {
         if (!alive) return;
-        setUserId(null);
+        setMe(null);
       } finally {
         if (!alive) return;
         setAuthLoading(false);
@@ -58,7 +59,7 @@ const App = () => {
 
       const user = await post("/api/login_code", { code });
 
-      setUserId(user._id);
+      setMe(user);
 
       try {
         await post("/api/initsocket", { socketid: socket.id });
@@ -71,7 +72,7 @@ const App = () => {
   };
 
   const handleLogout = async () => {
-    setUserId(null);
+    setMe(null);
     try {
       await post("/api/logout");
     } catch {}
@@ -79,8 +80,15 @@ const App = () => {
   };
 
   const authContextValue = useMemo(
-    () => ({ userId, handleLogin, handleLogout, authLoading }),
-    [userId, authLoading]
+    () => ({
+      me,
+      setMe,
+      userId: me?._id ?? null,
+      handleLogin,
+      handleLogout,
+      authLoading,
+    }),
+    [me, authLoading]
   );
 
   // 1) Loading gate FIRST: prevents login flash on refresh
@@ -93,7 +101,7 @@ const App = () => {
   }
 
   // 2) Not logged in
-  if (!userId) {
+  if (!me?._id) {
     return (
       <UserContext.Provider value={authContextValue}>
         <Login />
@@ -106,6 +114,7 @@ const App = () => {
     <UserContext.Provider value={authContextValue}>
       <div className="sketchApp appFadeIn">
         <NavBar />
+        <TutorialOverlay />
         <Outlet />
       </div>
     </UserContext.Provider>
