@@ -832,7 +832,7 @@ router.post("/customquests", async (req, res) => {
       return res.status(400).send({ error: "visibility must be private|friends|public" });
     }
 
-    const doc = await CustomQuest.create({
+    const created = await CustomQuest.create({
       creatorId: req.user._id,
       title: title.trim(),
       description: description.trim(),
@@ -840,7 +840,12 @@ router.post("/customquests", async (req, res) => {
       visibility: vis,
     });
 
-    res.send(doc);
+    // NEW: return populated creator info so UI can show the name immediately
+    const populated = await CustomQuest.findById(created._id)
+      .populate("creatorId", "name") // change "name" if your users use a different field
+      .lean();
+
+    res.send(populated);
   } catch (err) {
     console.log(err);
     res.status(500).send({ error: "Failed to create custom quest" });
@@ -871,7 +876,12 @@ router.get("/customquests", async (req, res) => {
       filter.$text = { $search: String(search).trim() };
     }
 
-    const docs = await CustomQuest.find(filter).sort({ createdAt: -1 }).limit(100).lean();
+    // NEW: populate creatorId so you can display creator name on the frontend
+    const docs = await CustomQuest.find(filter)
+      .populate("creatorId", "name") // change "name" if needed
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
 
     res.send(docs);
   } catch (err) {

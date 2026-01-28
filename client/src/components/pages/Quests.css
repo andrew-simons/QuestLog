@@ -255,6 +255,7 @@
   line-height: 1.35;
   white-space: normal;
   overflow-wrap: anywhere;
+  font-size: 14px;
 }
 
 .tagRow {
@@ -696,4 +697,11 @@
 }
 .debugStack .dbg:first-child {
   opacity: 0.45;
+}
+
+.customByline {
+  margin-top: 2px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  opacity: 0.75;
 }

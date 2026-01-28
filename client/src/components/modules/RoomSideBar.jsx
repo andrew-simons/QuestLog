@@ -16,7 +16,7 @@ export default function RoomSidebar({
   onRemoveSelected,
   setTyping,
 }) {
-  const [tab, setTab] = useState("inventory");
+  const [tab, setTab] = useState("shop");
 
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");

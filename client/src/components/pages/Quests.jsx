@@ -432,6 +432,11 @@ const Quests = () => {
             ) : (
               <div className="customList">
                 {filteredCustomQuests.map((cq) => {
+                  const creator =
+                    cq.creatorId && typeof cq.creatorId === "object"
+                      ? cq.creatorId.name || cq.creatorId.googleName || cq.creatorId.username
+                      : null;
+
                   const done = isCustomCompletedFor(cq._id);
                   const vis = cq.visibility || "public";
                   const tags = (cq.tags || []).slice(0, 4);
@@ -447,6 +452,8 @@ const Quests = () => {
                           <div className="customTop">
                             <div className="customTopLeft" style={{ minWidth: 0 }}>
                               <h3 className="customTitle">{cq.title}</h3>
+                              {creator && <div className="customByline">by {creator}</div>}
+
                               <div className="tagRow">
                                 <span className={`pill ${vis}`}>{vis}</span>
                                 {tags.map((t) => (
