@@ -9,7 +9,7 @@ import { get, post } from "../utilities";
 
 import NavBar from "./modules/NavBar";
 import Login from "./pages/Login";
-import LoadingGate from "./pages/LoadingGate"; // make this component
+import LoadingGate from "./pages/LoadingGate"; 
 import TutorialOverlay from "./modules/TutorialOverlay";
 
 export const UserContext = createContext(null);
@@ -24,7 +24,6 @@ const App = () => {
   const [authLoading, setAuthLoading] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
 
-  // Check existing session once on page load
   useEffect(() => {
     let alive = true;
 

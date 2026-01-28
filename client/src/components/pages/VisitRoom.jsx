@@ -36,7 +36,7 @@ export default function VisitRoom() {
         ...(prev || { userId: ownerId }),
         placedItems: payload.placedItems || [],
         beaver: payload.beaver || null,
-        owner: prev?.owner, // keep owner info
+        owner: prev?.owner, 
       }));
     };
 

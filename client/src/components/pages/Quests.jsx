@@ -6,7 +6,6 @@ import QuestCard from "../modules/QuestCard";
 import "./Quests.css";
 
 const rarityRank = (rarity) => {
-  // adjust to your actual rarity values if needed
   const order = {
     common: 1,
     uncommon: 2,
@@ -42,10 +41,8 @@ const Quests = () => {
   const [creating, setCreating] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // NEW: built-in sorting
   const [sortMode, setSortMode] = useState("rarity"); // "rarity" | "alpha"
 
-  // NEW: custom search + filters
   const [customSearch, setCustomSearch] = useState("");
   const [customSort, setCustomSort] = useState("new"); // "new" | "alpha" | "vis" | "status"
   const [customVisFilter, setCustomVisFilter] = useState("all"); // all/public/friends/private
@@ -85,14 +82,12 @@ const Quests = () => {
     return uq?.isCompleted ?? false;
   };
 
-  // NEW: derived sorted built-in list
   const sortedCurrentQuests = useMemo(() => {
     const copy = [...currentQuests];
     if (sortMode === "alpha") {
       copy.sort((a, b) => String(a.title || "").localeCompare(String(b.title || "")));
       return copy;
     }
-    // rarity (default): higher rarity first, tie-break alphabetical
     copy.sort((a, b) => {
       const dr = rarityRank(b.rarity) - rarityRank(a.rarity);
       if (dr !== 0) return dr;
@@ -101,7 +96,6 @@ const Quests = () => {
     return copy;
   }, [currentQuests, sortMode]);
 
-  // NEW: build tag options from all custom quests
   const customTagOptions = useMemo(() => {
     const set = new Set();
     customQuests.forEach((cq) => {
@@ -110,7 +104,6 @@ const Quests = () => {
     return ["all", ...Array.from(set).sort((a, b) => a.localeCompare(b))];
   }, [customQuests]);
 
-  // NEW: derived filtered custom list
   const filteredCustomQuests = useMemo(() => {
     const q = customSearch.trim().toLowerCase();
     const vis = customVisFilter;
@@ -118,19 +111,18 @@ const Quests = () => {
     const base = customQuests.filter((cq) => {
       const title = String(cq.title || "").toLowerCase();
       const desc = String(cq.description || "").toLowerCase();
-      const tags = (cq.tags || []).map((t) => String(t).toLowerCase()); // still searchable
+      const tags = (cq.tags || []).map((t) => String(t).toLowerCase()); 
       const visibility = String(cq.visibility || "public");
 
-      // search text (title/desc/tags)
+
       if (q) {
         const hit = title.includes(q) || desc.includes(q) || tags.some((t) => t.includes(q));
         if (!hit) return false;
       }
 
-      // visibility filter
+
       if (vis !== "all" && visibility !== vis) return false;
 
-      // completed filter
       if (!customShowCompleted) {
         const done = isCustomCompletedFor(cq._id);
         if (done) return false;
@@ -154,14 +146,12 @@ const Quests = () => {
         return getTime(b) - getTime(a);
       }
       if (customSort === "status") {
-        // incomplete first, then completed
         const da = isCustomCompletedFor(a._id) ? 1 : 0;
         const db = isCustomCompletedFor(b._id) ? 1 : 0;
         const d = da - db;
         if (d !== 0) return d;
         return getTime(b) - getTime(a);
       }
-      // default: newest first
       return getTime(b) - getTime(a);
     });
 
@@ -172,7 +162,7 @@ const Quests = () => {
     customVisFilter,
     customShowCompleted,
     customSort,
-    userQuestByCustomId, // so "status" updates when completion changes
+    userQuestByCustomId, 
   ]);
 
   const handleToggleCustomQuest = (customQuestId, isCompleted) => {
@@ -200,7 +190,6 @@ const Quests = () => {
       })
       .catch((err) => {
         console.log(err);
-        // rollback
         setUserQuestByCustomId((prev) => {
           const next = new Map(prev);
           const prevDoc = next.get(idStr) || { customQuestId: idStr, source: "custom" };
@@ -222,7 +211,6 @@ const Quests = () => {
 
     const prevWasCompleted = isCompletedFor(questKey);
 
-    // optimistic
     setUserQuestByKey((prev) => {
       const next = new Map(prev);
       const prevDoc = next.get(questKey) || { questKey };
@@ -274,8 +262,8 @@ const Quests = () => {
         .filter(Boolean);
 
       const title = String(newTitle).slice(0, MAX_TITLE);
-      const tags = Array.from(new Set(rawTags)).slice(0, MAX_TAGS); // unique + max 3
-      const description = String(newDesc).slice(0, MAX_DESC); // safety clamp
+      const tags = Array.from(new Set(rawTags)).slice(0, MAX_TAGS); 
+      const description = String(newDesc).slice(0, MAX_DESC); 
       const created = await post("/api/customquests", {
         title,
         description,
@@ -290,7 +278,6 @@ const Quests = () => {
       setNewTags("");
       setNewVis("public");
 
-      // optional: close modal on success
       setShowCreateModal(false);
     } catch (err) {
       console.log(err);
@@ -443,10 +430,8 @@ const Quests = () => {
 
                   return (
                     <div key={cq._id} className={`customCard tornCard ${done ? "done" : ""}`}>
-                      {/* SVG outline layer (required for torn-outline.svg) */}
                       <span className="tornOutline" />
 
-                      {/* IMPORTANT: wrap card content in tornContent so padding + safe-zone applies */}
                       <div className="tornContent">
                         <div style={{ minWidth: 0, flex: "1 1 auto" }}>
                           <div className="customTop">

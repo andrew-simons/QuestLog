@@ -92,7 +92,7 @@ const SingleJournalBlock = ({ item, journal, onSave, saving }) => {
   const [status, setStatus] = useState(""); // "", "Saved", "Save failed"
 
   // local device uploads (not saved yet)
-  const [selectedFiles, setSelectedFiles] = useState([]); // File[]
+  const [selectedFiles, setSelectedFiles] = useState([]); 
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -102,7 +102,7 @@ const SingleJournalBlock = ({ item, journal, onSave, saving }) => {
     setStatus("");
   }, [item.source, item.id, journal?.text, journal?.photoUrls]);
 
-  // previews for selected files
+
   const filePreviews = useMemo(() => {
     return selectedFiles.map((f) => ({
       key: `${f.name}:${f.size}:${f.lastModified}`,
@@ -111,7 +111,7 @@ const SingleJournalBlock = ({ item, journal, onSave, saving }) => {
     }));
   }, [selectedFiles]);
 
-  // cleanup blob URLs
+
   useEffect(() => {
     return () => {
       filePreviews.forEach((p) => URL.revokeObjectURL(p.url));

@@ -40,7 +40,6 @@ export default function Home() {
     }
     setPlacedCounts(m);
 
-    // if your backend returns { owner }, use that. Otherwise fallback to viewer.
     if (room?.owner) setRoomOwner(room.owner);
   }
 
@@ -48,7 +47,7 @@ export default function Home() {
     const resp = await patch("/api/room/wallpaper", { wallpaperKey: nextKey });
     if (resp?.error) return console.log(resp.error);
     setWallpaperKey(resp.wallpaperKey || nextKey);
-    setReloadToken((t) => t + 1); // optional, but fine
+    setReloadToken((t) => t + 1); 
   }
 
   useEffect(() => {
@@ -86,7 +85,6 @@ export default function Home() {
     const resp = await post("/api/me/name", { name: newName });
     if (resp?.error) return console.log(resp.error);
 
-    // keep header correct + keep whoami-ish state consistent
     setViewer((v) => (v ? { ...v, name: resp.name } : v));
     setRoomOwner((o) => (o ? { ...o, name: resp.name } : o));
   }

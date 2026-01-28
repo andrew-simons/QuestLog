@@ -111,7 +111,6 @@ export default function Friends() {
 
       setFriendCodeInput("");
       showToast("Request sent");
-      // incoming might not change, but safe
       fetchIncoming();
     } catch (e) {
       setError(e.message);

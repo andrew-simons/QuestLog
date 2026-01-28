@@ -6,7 +6,6 @@ const SingleQuestBlock = (props) => {
 
   return (
     <div className={`questRow tornCard ${isCompleted ? "done" : ""}`}>
-      {/* SVG outline layer (required for torn-outline.svg) */}
       <span className="tornOutline" />
 
       <div className="tornContent">

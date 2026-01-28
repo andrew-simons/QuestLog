@@ -142,9 +142,9 @@ function pointInItem(px, py, item, img) {
 
 export default function RoomCanvas({
   mode,
-  ownerId, // still used for REST room load in visitor mode
-  roomId, // presence room id (for multiplayer). owner roomId === ownerId typically
-  viewerId, // current logged-in user id
+  ownerId, 
+  roomId,
+  viewerId, 
   catalogByKey,
   socket,
   onSelectedChange,
@@ -152,7 +152,7 @@ export default function RoomCanvas({
   disableInput,
 }) {
   const canEditItems = mode === "owner";
-  const canMove = !!viewerId; // owner + visitor can move if logged in
+  const canMove = !!viewerId; 
   const canMoveNow = canMove && !disableInput;
 
   const containerRef = useRef(null);
@@ -181,10 +181,10 @@ export default function RoomCanvas({
     if (disableInput) clearKeys();
   }, [disableInput]);
 
-  // World (items only now)
+
   const worldRef = useRef({ items: [] });
 
-  // Multiplayer players: userId -> beaver state
+
   const playersRef = useRef(new Map());
 
   const beaverKeys = ["beaver0", "beaver1", "beaver2", "beaver3"];
@@ -211,7 +211,6 @@ export default function RoomCanvas({
     return next;
   };
 
-  // helper: ensure our local beaver object exists
   const getMyBeaver = () => {
     if (!viewerId) return null;
     return ensureBeaver(viewerId, {});
@@ -220,7 +219,6 @@ export default function RoomCanvas({
   const dragRef = useRef({ draggingId: null, grabDx: 0, grabDy: 0 });
   const viewRef = useRef({ scale: 1, offsetX: 0, offsetY: 0 });
 
-  // socket throttling state (movement broadcast)
   const netRef = useRef({
     lastSentAt: 0,
     lastX: null,
@@ -228,10 +226,8 @@ export default function RoomCanvas({
     lastDir: null,
   });
 
-  // owner persistence throttle + "send once on stop"
   const persistRef = useRef({ t: 0, sentStop: false });
 
-  // Debounced save (items)
   const saveTimerRef = useRef(null);
 
   const scheduleSaveItem = (id) => {
@@ -636,7 +632,7 @@ export default function RoomCanvas({
 
         if (Math.abs(vx) > Math.abs(vy)) {
           me.dir = vx > 0 ? "right" : "left";
-          me.facing = me.dir; // ✅ remember last horizontal
+          me.facing = me.dir; 
         } else {
           me.dir = vy > 0 ? "down" : "up";
           me.facing = me.facing ?? "right";
@@ -777,7 +773,6 @@ export default function RoomCanvas({
           ctx.save();
           if (!isSelf) ctx.globalAlpha = 1;
 
-          // y is feet position (anchor)
           ctx.drawImage(sheet, sx, sy, sw, sh, x - dw / 2, y - dh, dw, dh);
 
           ctx.restore();

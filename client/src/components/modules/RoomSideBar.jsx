@@ -27,7 +27,6 @@ export default function RoomSidebar({
   const [nameDraft, setNameDraft] = useState("");
 
   useEffect(() => {
-    // whenever you enter a room (or owner changes), reset draft
     setNameDraft(roomOwnerName || "");
     setEditingName(false);
   }, [roomOwnerName]);
@@ -123,7 +122,7 @@ export default function RoomSidebar({
             <span>coins</span>
           </div>
         </div>
-        {/* ✅ XP Bar */}
+        {/* XP Bar */}
         <div className="qs-xp">
           <div className="qs-xp-top">
             <span className="qs-xp-level">Level {lvl}</span>
@@ -153,7 +152,7 @@ export default function RoomSidebar({
           </button>
         </div>
 
-        {/* ✅ NEW: Wallpaper toggle (owner only) */}
+        {/* Wallpaper toggle (owner only) */}
         {isOwner && (
           <div className="qs-wallpaper">
             <div className="qs-wallpaper-title">Room background</div>
@@ -210,7 +209,7 @@ export default function RoomSidebar({
           ) : (
             inventory.map((row) => {
               const def = catalogByKey.get(row.itemKey);
-              const disabled = row.qty <= 0 || !isOwner; // only place in your own room
+              const disabled = row.qty <= 0 || !isOwner; 
               return (
                 <ItemCard
                   key={row.itemKey}

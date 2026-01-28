@@ -145,7 +145,7 @@ const Journal = () => {
         if (tb === 0) return -1;
         return tb - ta;
       });
-  }, [completedQuests, filterSource, search, sortBy]); // getJournalFor reads state but stable enough for UI sorting
+  }, [completedQuests, filterSource, search, sortBy]);
 
   const stats = useMemo(() => {
     const total = completedQuests.length;
@@ -157,7 +157,7 @@ const Journal = () => {
       (it) => (getJournalFor(it)?.photoUrls || []).length > 0
     ).length;
     return { total, shown, withText, withPhotos };
-  }, [completedQuests.length, visibleItems]); // counts recompute when visible changes
+  }, [completedQuests.length, visibleItems]); 
 
   return (
     <div className="jrPage">
