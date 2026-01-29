@@ -810,13 +810,6 @@ router.post("/customquests", async (req, res) => {
 
     const { title, description, tags, visibility } = req.body;
 
-    if (typeof title !== "string" || title.trim().length < 3) {
-      return res.status(400).send({ error: "title must be at least 3 chars" });
-    }
-    if (typeof description !== "string" || description.trim().length < 5) {
-      return res.status(400).send({ error: "description must be at least 5 chars" });
-    }
-
     if (title.trim().length > 30) return res.status(400).send({ error: "title max 30 chars" });
     if (description.trim().length > 100)
       return res.status(400).send({ error: "description max 100 chars" });
@@ -832,6 +825,7 @@ router.post("/customquests", async (req, res) => {
     if (!allowed.has(vis)) {
       return res.status(400).send({ error: "visibility must be private|friends|public" });
     }
+    console.log("passed");
 
     const created = await CustomQuest.create({
       creatorId: req.user._id,
@@ -840,11 +834,9 @@ router.post("/customquests", async (req, res) => {
       tags: (tags || []).map((t) => t.trim()).filter(Boolean),
       visibility: vis,
     });
+    console.log(created);
 
-    // NEW: return populated creator info so UI can show the name immediately
-    const populated = await CustomQuest.findById(created._id)
-      .populate("creatorId", "name") // change "name" if your users use a different field
-      .lean();
+    const populated = await CustomQuest.findById(created._id).populate("creatorId", "name").lean();
 
     res.send(populated);
   } catch (err) {
@@ -877,9 +869,8 @@ router.get("/customquests", async (req, res) => {
       filter.$text = { $search: String(search).trim() };
     }
 
-    // NEW: populate creatorId so you can display creator name on the frontend
     const docs = await CustomQuest.find(filter)
-      .populate("creatorId", "name") // change "name" if needed
+      .populate("creatorId", "name")
       .sort({ createdAt: -1 })
       .limit(100)
       .lean();

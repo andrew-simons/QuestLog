@@ -540,6 +540,10 @@ const Quests = () => {
                   value={newTags}
                   onChange={(e) => {
                     const raw = e.target.value;
+                    if (/,(\s*)$/.test(raw)) {
+                      setNewTags(raw);
+                      return;
+                    }
                     const parts = raw
                       .split(",")
                       .map((t) => t.trim().toLowerCase())
