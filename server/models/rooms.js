@@ -7,8 +7,8 @@ const RoomSchema = new mongoose.Schema(
     wallpaperKey: { type: String, default: "default_wallpaper" },
 
     beaver: {
-      x: { type: Number, default: 200 },
-      y: { type: Number, default: 480 },
+      x: { type: Number, default: 525 },
+      y: { type: Number, default: 510 },
       dir: { type: String, default: "down" },
     },
 

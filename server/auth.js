@@ -66,6 +66,26 @@ async function migrateUserIfNeeded(u) {
   return u;
 }
 
+async function addDefaultFriendsForNewUser(newUserId) {
+  for (const fid of DEFAULT_FRIEND_IDS) {
+    if (String(fid) === String(newUserId)) continue;
+
+    // Create an accepted edge so it shows up in GET /api/friends
+    await Friendship.updateOne(
+      { requester: newUserId, recipient: fid },
+      { $setOnInsert: { requester: newUserId, recipient: fid, status: "accepted" } },
+      { upsert: true }
+    );
+
+    // Optional: create the reverse edge too (mutual)
+    await Friendship.updateOne(
+      { requester: fid, recipient: newUserId },
+      { $setOnInsert: { requester: fid, recipient: newUserId, status: "accepted" } },
+      { upsert: true }
+    );
+  }
+}
+
 async function getOrCreateUser(user) {
   let existingUser = await User.findOne({ googleid: user.sub });
 
