@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { UserContext } from "../App";
 import { post, patch } from "../../utilities";
@@ -59,6 +59,11 @@ export default function TutorialOverlay() {
 
   const stepDef = useMemo(() => STEPS.find((s) => s.step === tutorialStep) || null, [tutorialStep]);
 
+  // IMPORTANT: keep hooks above early returns
+  useEffect(() => {
+    return () => setIsTyping(false);
+  }, [setIsTyping]);
+
   if (!me?._id || tutorialDone || !stepDef) return null;
 
   const requiredRoute = stepDef.route;
@@ -69,6 +74,12 @@ export default function TutorialOverlay() {
 
   const title = typeof stepDef.title === "function" ? stepDef.title(me?.name) : stepDef.title;
 
+  const stopTyping = () => {
+    // ensure blur happens even if overlay is about to unmount / route changes
+    document.activeElement?.blur?.();
+    setIsTyping(false);
+  };
+
   async function saveTutorial(patchBody) {
     const updated = await patch("/api/me/onboarding", patchBody);
     setMe(updated);
@@ -76,6 +87,7 @@ export default function TutorialOverlay() {
   }
 
   async function handleSkip() {
+    stopTyping();
     try {
       setSaving(true);
       setErr("");
@@ -88,6 +100,7 @@ export default function TutorialOverlay() {
   }
 
   async function handleNext() {
+    stopTyping();
     try {
       setSaving(true);
       setErr("");
@@ -102,7 +115,7 @@ export default function TutorialOverlay() {
 
       // Advance to the next step first.
       const nextStep = tutorialStep + 1;
-      const updated = await saveTutorial({ tutorialStep: nextStep });
+      await saveTutorial({ tutorialStep: nextStep });
 
       // Then auto-navigate to the next step's route if needed.
       const nextDef = STEPS.find((s) => s.step === nextStep);
@@ -111,9 +124,7 @@ export default function TutorialOverlay() {
         const onNextRoute =
           location.pathname === nextRoute || location.pathname.startsWith(nextRoute + "/");
 
-        if (!onNextRoute) {
-          navigate(nextRoute);
-        }
+        if (!onNextRoute) navigate(nextRoute);
       }
     } catch (e) {
       console.log(e);
@@ -124,8 +135,9 @@ export default function TutorialOverlay() {
   }
 
   async function handleSaveNameAndContinue() {
-    const trimmed = nameDraft.trim();
+    stopTyping();
 
+    const trimmed = nameDraft.trim();
     if (!trimmed) return setErr("Please enter a name.");
     if (trimmed.length > 14) return setErr("Name must be 14 characters or fewer.");
 
@@ -158,6 +170,7 @@ export default function TutorialOverlay() {
             Skip
           </button>
         </div>
+
         <div className="tutorial-divider" />
 
         <p className="tutorial-body">{stepDef.body}</p>

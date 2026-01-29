@@ -142,9 +142,9 @@ function pointInItem(px, py, item, img) {
 
 export default function RoomCanvas({
   mode,
-  ownerId, 
+  ownerId,
   roomId,
-  viewerId, 
+  viewerId,
   catalogByKey,
   socket,
   onSelectedChange,
@@ -152,7 +152,7 @@ export default function RoomCanvas({
   disableInput,
 }) {
   const canEditItems = mode === "owner";
-  const canMove = !!viewerId; 
+  const canMove = !!viewerId;
   const canMoveNow = canMove && !disableInput;
 
   const containerRef = useRef(null);
@@ -181,9 +181,7 @@ export default function RoomCanvas({
     if (disableInput) clearKeys();
   }, [disableInput]);
 
-
   const worldRef = useRef({ items: [] });
-
 
   const playersRef = useRef(new Map());
 
@@ -632,7 +630,7 @@ export default function RoomCanvas({
 
         if (Math.abs(vx) > Math.abs(vy)) {
           me.dir = vx > 0 ? "right" : "left";
-          me.facing = me.dir; 
+          me.facing = me.dir;
         } else {
           me.dir = vy > 0 ? "down" : "up";
           me.facing = me.facing ?? "right";

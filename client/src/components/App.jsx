@@ -9,7 +9,7 @@ import { get, post } from "../utilities";
 
 import NavBar from "./modules/NavBar";
 import Login from "./pages/Login";
-import LoadingGate from "./pages/LoadingGate"; 
+import LoadingGate from "./pages/LoadingGate";
 import TutorialOverlay from "./modules/TutorialOverlay";
 
 export const UserContext = createContext(null);
