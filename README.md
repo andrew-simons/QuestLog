@@ -2,6 +2,9 @@
 
 QuestLog is a gamified self-improvement web application that turns real-world habits, goals, and activities into quests within a playful 2D virtual environment. The app is designed to motivate consistency, reflection, and personal growth through game mechanics, customization, and light social interaction.
 
+## Live Website Link
+https://questlog-hocl.onrender.com/
+
 ## Core Features
 
 ### User Accounts & Authentication
